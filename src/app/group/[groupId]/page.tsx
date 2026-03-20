@@ -1,0 +1,200 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ReadingLogCard } from "@/components/domain/reading-log-card";
+import { buttonStyles } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs } from "@/components/ui/tabs";
+import { Toast } from "@/components/ui/toast";
+import { getGroupWorkspace } from "@/lib/data/queries";
+import { getStringParam, readToast } from "@/lib/toast";
+
+interface GroupHomePageProps {
+  params: Promise<{ groupId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const LOGS_PER_PAGE = 15;
+
+function buildFeedHref(groupId: string, view: "group" | "mine", page: number) {
+  const params = new URLSearchParams();
+
+  if (view === "mine") {
+    params.set("view", "mine");
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+  return query ? `/group/${groupId}?${query}` : `/group/${groupId}`;
+}
+
+export default async function GroupHomePage({
+  params,
+  searchParams,
+}: GroupHomePageProps) {
+  const { groupId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const workspace = await getGroupWorkspace(groupId);
+  const toast = readToast(resolvedSearchParams);
+  const logView = getStringParam(resolvedSearchParams, "view") === "mine" ? "mine" : "group";
+  const pageParam = Number(getStringParam(resolvedSearchParams, "page") ?? "1");
+
+  if (!workspace) {
+    notFound();
+  }
+
+  const myLogs = workspace.recentLogs.filter((log) => log.member.id === workspace.me.id);
+  const visibleLogs = logView === "mine" ? myLogs : workspace.recentLogs;
+  const totalPages = Math.max(1, Math.ceil(visibleLogs.length / LOGS_PER_PAGE));
+  const currentPage = Number.isFinite(pageParam)
+    ? Math.min(totalPages, Math.max(1, Math.floor(pageParam)))
+    : 1;
+  const paginatedLogs = visibleLogs.slice(
+    (currentPage - 1) * LOGS_PER_PAGE,
+    currentPage * LOGS_PER_PAGE,
+  );
+
+  return (
+    <div className="space-y-5">
+      {toast ? (
+        <Toast
+          description={toast.description}
+          title={toast.title}
+          tone={toast.tone}
+        />
+      ) : null}
+
+      <Card elevated className="surface-soft space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className={`inline-flex h-9 items-center rounded-[14px] px-3 text-[12px] font-medium sm:h-10 sm:px-3.5 sm:text-[13px] ${
+              workspace.hasLoggedToday
+                ? "bg-positive/12 text-positive"
+                : "bg-cautionary/12 text-cautionary"
+            }`}
+          >
+            {workspace.hasLoggedToday ? "오늘 기록함" : "기록 대기"}
+          </div>
+          <div className="inline-flex h-9 items-center rounded-[14px] bg-fill-alternative px-3 text-[12px] font-medium text-label-strong sm:h-10 sm:px-3.5 sm:text-[13px]">
+            이번 주 기록: {workspace.personalSummary.daysReadThisWeek}일/
+            {workspace.personalSummary.pagesThisWeek}페이지
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_176px] md:items-end">
+          <div className="space-y-2">
+            <h2 className="text-[1.125rem] leading-7 font-semibold tracking-[-0.022em] text-label-strong sm:text-[1.25rem] sm:leading-8 md:text-[1.375rem] md:leading-8">
+              {workspace.todayPrompt}
+            </h2>
+          </div>
+
+          <Link
+            className={buttonStyles({
+              block: true,
+              className: "h-12 rounded-[18px] shadow-none sm:h-13",
+              size: "lg",
+            })}
+            href={`/group/${groupId}/log`}
+          >
+            기록하기
+          </Link>
+        </div>
+      </Card>
+
+      <section className="space-y-4">
+        <Tabs
+          items={[
+            {
+              label: `모임 기록 ${workspace.recentLogs.length}`,
+              href: buildFeedHref(groupId, "group", 1),
+              active: logView === "group",
+            },
+            {
+              label: `내 기록 ${myLogs.length}`,
+              href: buildFeedHref(groupId, "mine", 1),
+              active: logView === "mine",
+            },
+          ]}
+        />
+        {paginatedLogs.length ? (
+          <div className="space-y-4">
+            {paginatedLogs.map((log) => (
+              <ReadingLogCard key={log.id} log={log} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            description="아직 남긴 기록이 없습니다."
+            title="표시할 기록이 없습니다"
+          />
+        )}
+        {visibleLogs.length > LOGS_PER_PAGE ? (
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+            <Link
+              aria-disabled={currentPage === 1}
+              className={buttonStyles({
+                className: currentPage === 1 ? "pointer-events-none opacity-40" : "",
+                size: "sm",
+                variant: "secondary",
+              })}
+              href={buildFeedHref(groupId, logView, 1)}
+            >
+              {"<<"}
+            </Link>
+            <Link
+              aria-disabled={currentPage === 1}
+              className={buttonStyles({
+                className: currentPage === 1 ? "pointer-events-none opacity-40" : "",
+                size: "sm",
+                variant: "secondary",
+              })}
+              href={buildFeedHref(groupId, logView, currentPage - 1)}
+            >
+              {"<"}
+            </Link>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+              <Link
+                key={page}
+                className={buttonStyles({
+                  className: currentPage === page ? "border-primary/20 bg-primary/10 text-primary" : "",
+                  size: "sm",
+                  variant: "secondary",
+                })}
+                href={buildFeedHref(groupId, logView, page)}
+              >
+                {page}
+              </Link>
+            ))}
+            <Link
+              aria-disabled={currentPage === totalPages}
+              className={buttonStyles({
+                className:
+                  currentPage === totalPages ? "pointer-events-none opacity-40" : "",
+                size: "sm",
+                variant: "secondary",
+              })}
+              href={buildFeedHref(groupId, logView, currentPage + 1)}
+            >
+              {">"}
+            </Link>
+            <Link
+              aria-disabled={currentPage === totalPages}
+              className={buttonStyles({
+                className:
+                  currentPage === totalPages ? "pointer-events-none opacity-40" : "",
+                size: "sm",
+                variant: "secondary",
+              })}
+              href={buildFeedHref(groupId, logView, totalPages)}
+            >
+              {">>"}
+            </Link>
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
+}

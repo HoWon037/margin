@@ -1,0 +1,31 @@
+import Link from "next/link";
+import { Avatar } from "@/components/ui/avatar";
+import { cn } from "@/lib/cn";
+import type { UserSummary } from "@/lib/types";
+
+interface ProfileLinkProps {
+  user: UserSummary;
+  href: string;
+  className?: string;
+}
+
+export function ProfileLink({
+  user,
+  href,
+  className,
+}: ProfileLinkProps) {
+  return (
+    <Link
+      className={cn(
+        "inline-flex min-w-0 items-center gap-3 rounded-full border border-line-solid/90 bg-bg-normal/90 px-2.5 py-2 shadow-xs transition md:hover:bg-fill-alternative",
+        className,
+      )}
+      href={href}
+    >
+      <Avatar name={user.nickname} size="sm" tone={user.avatarColor} />
+      <div className="min-w-0">
+        <p className="truncate type-label text-label-strong">{user.nickname}</p>
+      </div>
+    </Link>
+  );
+}
