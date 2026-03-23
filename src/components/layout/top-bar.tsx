@@ -22,6 +22,7 @@ export function TopBar({
   isOwner,
   currentUser,
 }: TopBarProps) {
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isFloatingMobile, setIsFloatingMobile] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -36,7 +37,11 @@ export function TopBar({
     const mobileQuery = window.matchMedia("(max-width: 767px)");
 
     const updateFloatingState = () => {
-      const nextValue = mobileQuery.matches && window.scrollY > 18;
+      const isMobile = mobileQuery.matches;
+      const nextValue = isMobile && window.scrollY > 18;
+      setIsMobileViewport((current) =>
+        current === isMobile ? current : isMobile,
+      );
       setIsFloatingMobile((current) =>
         current === nextValue ? current : nextValue,
       );
@@ -57,25 +62,27 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu transition-[background-color,border-color,backdrop-filter,box-shadow,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "sticky top-0 z-30 transform-gpu transition-[background-color,border-color,backdrop-filter,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
         isFloatingMobile
           ? "border-transparent bg-bg-alternative/12"
+          : isMobileViewport
+            ? "border-transparent bg-transparent"
           : "chrome-surface border-b border-line-solid bg-bg-alternative/90 backdrop-blur",
       )}
     >
       <div
         className={cn(
-          "mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:px-5",
+          "mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
           isFloatingMobile && "pt-3",
         )}
       >
         <div
           className={cn(
-            "flex items-center justify-between gap-4 pb-4 transition-[padding,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-            isFloatingMobile && "translate-y-0.5 pb-3",
+            "flex items-center justify-between gap-4 pb-4 transition-[padding,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+            isFloatingMobile && "translate-y-0.5 pb-1",
           )}
         >
-          <div className="flex min-w-0 items-center gap-3 transform-gpu transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]">
+          <div className="flex min-w-0 items-center gap-3 rounded-full border border-transparent px-0 py-0 transform-gpu transition-[padding,border-color,background-color,box-shadow,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]">
             <ProfileLink
               className={cn(
                 "max-w-[180px] sm:max-w-[220px]",
@@ -91,9 +98,9 @@ export function TopBar({
           </div>
           <div
             className={cn(
-              "flex items-center gap-2 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
               isFloatingMobile &&
-                "chrome-surface rounded-full border border-line-solid px-1.5 py-1.5 shadow-sm",
+                "chrome-surface border-line-solid shadow-sm",
             )}
           >
             <ThemeToggle
