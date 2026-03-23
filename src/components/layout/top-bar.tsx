@@ -62,23 +62,23 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu transition-[background-color,border-color,backdrop-filter,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+        "sticky top-0 z-30 transform-gpu transition-[background-color,border-color,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
         isFloatingMobile
-          ? "border-transparent bg-bg-alternative/12"
+          ? "border-transparent bg-transparent"
           : isMobileViewport
             ? "border-transparent bg-transparent"
-          : "chrome-surface border-b border-line-solid bg-bg-alternative/90 backdrop-blur",
+          : "chrome-surface border-b border-line-solid bg-bg-alternative/90",
       )}
     >
       <div
         className={cn(
-          "mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
+          "relative z-10 mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
           isFloatingMobile && "pt-3",
         )}
       >
         <div
           className={cn(
-            "flex items-center justify-between gap-4 pb-4 transition-[padding,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+            "flex items-center justify-between gap-4 pb-3 transition-[padding,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
             isFloatingMobile && "translate-y-0.5 pb-1",
           )}
         >
