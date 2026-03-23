@@ -22,7 +22,6 @@ export function TopBar({
   isOwner,
   currentUser,
 }: TopBarProps) {
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isFloatingMobile, setIsFloatingMobile] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -37,11 +36,7 @@ export function TopBar({
     const mobileQuery = window.matchMedia("(max-width: 767px)");
 
     const updateFloatingState = () => {
-      const isMobile = mobileQuery.matches;
-      const nextValue = isMobile && window.scrollY > 18;
-      setIsMobileViewport((current) =>
-        current === isMobile ? current : isMobile,
-      );
+      const nextValue = mobileQuery.matches && window.scrollY > 18;
       setIsFloatingMobile((current) =>
         current === nextValue ? current : nextValue,
       );
@@ -62,12 +57,10 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu transition-[background-color,border-color,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
         isFloatingMobile
-          ? "border-transparent bg-transparent"
-          : isMobileViewport
-            ? "border-transparent bg-transparent"
-          : "chrome-surface border-b border-line-solid bg-bg-alternative/90",
+          ? "pointer-events-none border-transparent bg-transparent shadow-none"
+          : "",
       )}
     >
       <div
@@ -87,7 +80,7 @@ export function TopBar({
               className={cn(
                 "max-w-[180px] sm:max-w-[220px]",
                 isFloatingMobile &&
-                  "shadow-sm md:hover:bg-fill-alternative",
+                  "pointer-events-auto shadow-sm md:hover:bg-fill-alternative",
               )}
               href={profileHref}
               user={currentUser}
@@ -100,7 +93,7 @@ export function TopBar({
             className={cn(
               "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
               isFloatingMobile &&
-                "chrome-surface border-line-solid shadow-sm",
+                "pointer-events-auto chrome-surface border-line-solid shadow-sm",
             )}
           >
             <ThemeToggle
