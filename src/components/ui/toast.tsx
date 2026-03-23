@@ -21,14 +21,18 @@ export function Toast({
   tone = "primary",
   className,
 }: ToastProps) {
+  const isAssertive = tone === "negative" || tone === "cautionary";
+
   return (
     <div
+      aria-atomic="true"
+      aria-live={isAssertive ? "assertive" : "polite"}
       className={cn(
         "rounded-lg border px-4 py-3 shadow-xs",
         toneMap[tone],
         className,
       )}
-      role="status"
+      role={isAssertive ? "alert" : "status"}
     >
       <p className="type-label">{title}</p>
       {description ? <p className="mt-1 type-caption">{description}</p> : null}

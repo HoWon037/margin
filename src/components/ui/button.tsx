@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 const sizeStyles = {
   sm: "h-9 rounded-md px-3.5 type-label",
   md: "h-11 rounded-lg px-4 type-label",
-  lg: "h-13 rounded-lg px-5 type-label",
+  lg: "h-[52px] rounded-lg px-5 type-label",
 };
 
 const variantStyles = {
@@ -32,7 +32,7 @@ export function buttonStyles({
   block = false,
 }: Pick<ButtonProps, "className" | "variant" | "size" | "block">) {
   return cn(
-    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap border font-medium outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex shrink-0 touch-manipulation items-center justify-center gap-2 whitespace-nowrap border font-medium outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
     sizeStyles[size],
     variantStyles[variant],
     block && "w-full",

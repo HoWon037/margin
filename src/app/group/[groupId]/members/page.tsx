@@ -16,9 +16,15 @@ interface MembersPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function MobileMemberExpanded({ member }: { member: MemberSummary }) {
+function MemberSummaryStats({
+  member,
+  className,
+}: {
+  member: MemberSummary;
+  className?: string;
+}) {
   return (
-    <div className="grid gap-3 sm:hidden">
+    <div className={className}>
       <div className="rounded-2xl bg-fill-alternative p-4">
         <p className="type-caption text-label-assistive">읽은 날</p>
         <p className="mt-1 type-label text-label-strong">{member.daysReadThisWeek}일</p>
@@ -37,6 +43,10 @@ function MobileMemberExpanded({ member }: { member: MemberSummary }) {
       </div>
     </div>
   );
+}
+
+function MobileMemberExpanded({ member }: { member: MemberSummary }) {
+  return <MemberSummaryStats className="grid gap-3 sm:hidden" member={member} />;
 }
 
 function MemberDetailPanel({ member }: { member: MemberSummary }) {
@@ -64,26 +74,7 @@ function MemberDetailPanel({ member }: { member: MemberSummary }) {
 
         <ReadingDaysStrip days={member.weeklyReadDays} />
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-          <div className="rounded-2xl bg-fill-alternative p-4">
-            <p className="type-caption text-label-assistive">읽은 날</p>
-            <p className="mt-1 type-label text-label-strong">
-              {member.daysReadThisWeek}일
-            </p>
-          </div>
-          <div className="rounded-2xl bg-fill-alternative p-4">
-            <p className="type-caption text-label-assistive">읽은 페이지</p>
-            <p className="mt-1 type-label text-label-strong">
-              {formatPages(member.totalPagesThisWeek)}
-            </p>
-          </div>
-          <div className="rounded-2xl bg-fill-alternative p-4">
-            <p className="type-caption text-label-assistive">읽는 책</p>
-            <p className="mt-1 type-label text-label-strong">
-              {member.activeBooks.length}권
-            </p>
-          </div>
-        </div>
+        <MemberSummaryStats className="grid gap-3 sm:grid-cols-3" member={member} />
       </Card>
 
       <Card className="space-y-4">
@@ -150,7 +141,7 @@ export default async function MembersPage({
         />
       ) : null}
 
-      <div className="grid gap-6 min-[760px]:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
+      <div className="grid gap-6 min-[720px]:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
         <div className="space-y-3">
           {workspace.members.map((member) => (
             <MemberCard
@@ -167,7 +158,7 @@ export default async function MembersPage({
           ))}
         </div>
 
-        <div className="hidden min-[760px]:block min-[760px]:sticky min-[760px]:top-24">
+        <div className="hidden min-[720px]:block min-[720px]:sticky min-[720px]:top-24">
           <MemberDetailPanel member={selectedMember} />
         </div>
       </div>

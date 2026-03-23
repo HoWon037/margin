@@ -209,6 +209,10 @@ html[data-theme="dark"] {
     letter-spacing: 0.01em;
   }
 
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
   .scrollbar-hidden {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -346,6 +350,24 @@ html[data-theme="dark"] .text-label-alternative {
 ::view-transition-new(root) {
   animation-duration: 680ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .expand-reveal {
+    animation: none;
+  }
+
+  html.theme-transitioning,
+  html.theme-transitioning *,
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 @media (min-width: 48rem) {

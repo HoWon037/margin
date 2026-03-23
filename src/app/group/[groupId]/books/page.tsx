@@ -26,13 +26,23 @@ interface BookDetailPanelProps {
   statusFilter: "reading" | "finished";
 }
 
-function MobileBookExpanded({
-  book,
-  groupId,
-  statusFilter,
-}: BookDetailPanelProps) {
+function getBookProgressValue(book: BookSummary) {
+  if (book.status === "finished") {
+    return 100;
+  }
+
+  if (!book.totalPages) {
+    return 0;
+  }
+
+  return Math.min(100, (book.myLoggedPages / book.totalPages) * 100);
+}
+
+function BookStatsGrid({ book }: { book: BookSummary }) {
+  const progressValue = getBookProgressValue(book);
+
   return (
-    <div className="space-y-3 sm:hidden">
+    <>
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-fill-alternative p-4">
           <p className="type-caption text-label-assistive">전체 페이지</p>
@@ -52,57 +62,70 @@ function MobileBookExpanded({
         <div className="flex items-center justify-between gap-3">
           <p className="type-label text-label-strong">진행률</p>
           <p className="type-caption text-label-alternative">
-            {book.status === "finished"
-              ? "100%"
-              : `${Math.min(
-                  100,
-                  Math.round((book.myLoggedPages / book.totalPages) * 100),
-                )}%`}
+            {Math.round(progressValue)}%
           </p>
         </div>
-        <ProgressBar
-          tone="primary"
-          value={
-            book.status === "finished"
-              ? 100
-              : (book.myLoggedPages / book.totalPages) * 100
-          }
-        />
+        <ProgressBar tone="primary" value={progressValue} />
       </div>
+    </>
+  );
+}
 
-      <div className="space-y-3">
-        <p className="type-label text-label-strong">상태</p>
-        <div className="grid grid-cols-2 gap-3">
-          {BOOK_STATUS_OPTIONS.map((option) => {
-            const active = book.status === option.value;
+function BookStatusActions({
+  book,
+  groupId,
+  statusFilter,
+}: BookDetailPanelProps) {
+  return (
+    <div className="space-y-3">
+      <p className="type-label text-label-strong">상태</p>
+      <div className="grid grid-cols-2 gap-3">
+        {BOOK_STATUS_OPTIONS.map((option) => {
+          const active = book.status === option.value;
 
-            return (
-              <form key={option.value} action={updateBookStatusAction}>
-                <input name="groupId" type="hidden" value={groupId} />
-                <input name="bookId" type="hidden" value={book.id} />
-                <input
-                  name="redirectTo"
-                  type="hidden"
-                  value={buildBooksHref(groupId, statusFilter, book.id)}
-                />
-                <input name="status" type="hidden" value={option.value} />
-                <button
-                  className={cn(
-                    "flex h-12 w-full items-center justify-center rounded-2xl border type-label transition",
-                    active
-                      ? "border-primary/25 bg-primary/10 text-label-strong"
-                      : "border-line-solid bg-bg-normal text-label-alternative",
-                  )}
-                  disabled={active}
-                  type="submit"
-                >
-                  {option.label}
-                </button>
-              </form>
-            );
-          })}
-        </div>
+          return (
+            <form key={option.value} action={updateBookStatusAction}>
+              <input name="groupId" type="hidden" value={groupId} />
+              <input name="bookId" type="hidden" value={book.id} />
+              <input
+                name="redirectTo"
+                type="hidden"
+                value={buildBooksHref(groupId, statusFilter, book.id)}
+              />
+              <input name="status" type="hidden" value={option.value} />
+              <button
+                className={cn(
+                  "flex h-12 w-full items-center justify-center rounded-2xl border type-label transition",
+                  active
+                    ? "border-primary/25 bg-primary/10 text-label-strong"
+                    : "border-line-solid bg-bg-normal text-label-alternative md:hover:border-line-normal md:hover:bg-fill-alternative md:hover:text-label-strong",
+                )}
+                disabled={active}
+                type="submit"
+              >
+                {option.label}
+              </button>
+            </form>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function MobileBookExpanded({
+  book,
+  groupId,
+  statusFilter,
+}: BookDetailPanelProps) {
+  return (
+    <div className="space-y-3 sm:hidden">
+      <BookStatsGrid book={book} />
+      <BookStatusActions
+        book={book}
+        groupId={groupId}
+        statusFilter={statusFilter}
+      />
     </div>
   );
 }
@@ -127,84 +150,27 @@ function BookDetailPanel({
     <Card className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <p className="type-headline text-label-strong">{book.title}</p>
-          <p className="type-label-reading text-label-alternative">{book.author}</p>
+          <p className="truncate type-headline text-label-strong" title={book.title}>
+            {book.title}
+          </p>
+          <p
+            className="truncate type-label-reading text-label-alternative"
+            title={book.author}
+          >
+            {book.author}
+          </p>
         </div>
         <Chip tone={book.status === "reading" ? "primary" : "neutral"}>
           {formatBookStatus(book.status)}
         </Chip>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-fill-alternative p-4">
-          <p className="type-caption text-label-assistive">전체 페이지</p>
-          <p className="mt-1 type-label text-label-strong">
-            {formatPages(book.totalPages)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-fill-alternative p-4">
-          <p className="type-caption text-label-assistive">내 기록</p>
-          <p className="mt-1 type-label text-label-strong">
-            {formatPages(book.myLoggedPages)}
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-3 rounded-2xl bg-fill-alternative p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="type-label text-label-strong">진행률</p>
-          <p className="type-caption text-label-alternative">
-            {book.status === "finished"
-              ? "100%"
-              : `${Math.min(
-                  100,
-                  Math.round((book.myLoggedPages / book.totalPages) * 100),
-                )}%`}
-          </p>
-        </div>
-        <ProgressBar
-          tone="primary"
-          value={
-            book.status === "finished"
-              ? 100
-              : (book.myLoggedPages / book.totalPages) * 100
-          }
-        />
-      </div>
-
-      <div className="space-y-3">
-        <p className="type-label text-label-strong">상태</p>
-        <div className="grid grid-cols-2 gap-3">
-          {BOOK_STATUS_OPTIONS.map((option) => {
-            const active = book.status === option.value;
-
-            return (
-              <form key={option.value} action={updateBookStatusAction}>
-                <input name="groupId" type="hidden" value={groupId} />
-                <input name="bookId" type="hidden" value={book.id} />
-                <input
-                  name="redirectTo"
-                  type="hidden"
-                  value={buildBooksHref(groupId, statusFilter, book.id)}
-                />
-                <input name="status" type="hidden" value={option.value} />
-                <button
-                  className={cn(
-                    "flex h-12 w-full items-center justify-center rounded-2xl border type-label transition",
-                    active
-                      ? "border-primary/25 bg-primary/10 text-label-strong"
-                      : "border-line-solid bg-bg-normal text-label-alternative md:hover:border-line-normal md:hover:bg-fill-alternative md:hover:text-label-strong",
-                  )}
-                  disabled={active}
-                  type="submit"
-                >
-                  {option.label}
-                </button>
-              </form>
-            );
-          })}
-        </div>
-      </div>
+      <BookStatsGrid book={book} />
+      <BookStatusActions
+        book={book}
+        groupId={groupId}
+        statusFilter={statusFilter}
+      />
     </Card>
   );
 }
@@ -259,7 +225,7 @@ export default async function BooksPage({
         ]}
       />
 
-      <div className="grid gap-6 min-[760px]:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+      <div className="grid gap-6 min-[720px]:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-4">
           {filteredBooks.length ? (
             filteredBooks.map((book) => (
@@ -303,7 +269,7 @@ export default async function BooksPage({
         </div>
 
         {selectedBook ? (
-          <div className="hidden min-[760px]:block min-[760px]:sticky min-[760px]:top-24">
+          <div className="hidden min-[720px]:block min-[720px]:sticky min-[720px]:top-24">
             <BookDetailPanel
               book={selectedBook}
               groupId={groupId}

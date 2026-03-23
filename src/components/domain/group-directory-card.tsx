@@ -19,10 +19,12 @@ export function GroupDirectoryCard({
       >
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="type-headline text-label-strong">{item.group.name}</p>
+            <div className="min-w-0 space-y-1">
+              <p className="truncate type-headline text-label-strong" title={item.group.name}>
+                {item.group.name}
+              </p>
               {item.group.description ? (
-                <p className="type-body text-label-alternative">
+                <p className="break-words type-body text-label-alternative">
                   {item.group.description}
                 </p>
               ) : null}
@@ -35,7 +37,7 @@ export function GroupDirectoryCard({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-fill-alternative p-4">
               <p className="type-caption text-label-assistive">멤버</p>
-              <p className="mt-1 type-label text-label-strong">
+              <p className="mt-1 type-label text-label-strong tabular-nums">
                 {item.group.memberCount}
               </p>
             </div>
@@ -50,7 +52,7 @@ export function GroupDirectoryCard({
             </div>
             <div className="rounded-2xl bg-fill-alternative p-4">
               <p className="type-caption text-label-assistive">초대 코드</p>
-              <p className="mt-1 type-label text-label-strong">
+              <p className="mt-1 type-label text-label-strong tabular-nums">
                 {item.group.inviteCode}
               </p>
             </div>

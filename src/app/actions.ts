@@ -22,6 +22,7 @@ import { generateInviteCode } from "@/lib/utils";
 
 type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type GroupOwnerRow = Pick<GroupRow, "owner_id">;
+type AuthContext = NonNullable<Awaited<ReturnType<typeof requireUser>>>;
 
 const AUTH_EMAIL_DOMAIN = "auth.margin.local";
 
@@ -49,6 +50,70 @@ function buildRedirectWithToast(
   }
 
   return `${path}?${params.toString()}`;
+}
+
+function redirectWithToast(
+  path: string,
+  toast: string,
+  tone: "primary" | "positive" | "cautionary" | "negative",
+  description?: string,
+): never {
+  redirect(buildRedirectWithToast(path, toast, tone, description));
+}
+
+function revalidateGroupDirectory() {
+  revalidatePath("/groups");
+}
+
+function revalidateGroupRoutes(
+  groupId: string,
+  options?: {
+    includeLog?: boolean;
+    includeMembers?: boolean;
+    includeBooks?: boolean;
+    includeWeekly?: boolean;
+    includeSettings?: boolean;
+  },
+) {
+  revalidatePath(`/group/${groupId}`);
+
+  if (options?.includeLog) {
+    revalidatePath(`/group/${groupId}/log`);
+  }
+
+  if (options?.includeMembers) {
+    revalidatePath(`/group/${groupId}/members`);
+  }
+
+  if (options?.includeBooks) {
+    revalidatePath(`/group/${groupId}/books`);
+  }
+
+  if (options?.includeWeekly) {
+    revalidatePath(`/group/${groupId}/weekly`);
+  }
+
+  if (options?.includeSettings) {
+    revalidatePath(`/group/${groupId}/settings`);
+  }
+}
+
+async function getGroupOwnerId(
+  supabase: AuthContext["supabase"],
+  groupId: string,
+) {
+  const ownerCheck = await supabase
+    .from("groups")
+    .select("owner_id")
+    .eq("id", groupId)
+    .single();
+
+  if (ownerCheck.error) {
+    return null;
+  }
+
+  const owner = ownerCheck.data as GroupOwnerRow | null;
+  return owner?.owner_id ?? null;
 }
 
 async function requireUser() {
@@ -228,13 +293,7 @@ export async function signInWithPasswordAction(
 
   await upsertProfile({ loginId: parsed.data.loginId });
 
-  redirect(
-    buildRedirectWithToast(
-      "/groups",
-      "로그인했습니다",
-      "positive",
-    ),
-  );
+  redirectWithToast("/groups", "로그인했습니다", "positive");
 }
 
 export async function signUpWithPasswordAction(
@@ -293,13 +352,7 @@ export async function signUpWithPasswordAction(
     avatarColor: parsed.data.avatarColor,
   });
 
-  redirect(
-    buildRedirectWithToast(
-      "/groups",
-      "가입이 완료되었습니다",
-      "positive",
-    ),
-  );
+  redirectWithToast("/groups", "가입이 완료되었습니다", "positive");
 }
 
 export async function signOutAction() {
@@ -311,13 +364,7 @@ export async function signOutAction() {
 
   await supabase.auth.signOut();
 
-  redirect(
-    buildRedirectWithToast(
-      "/",
-      "로그아웃되었습니다",
-      "positive",
-    ),
-  );
+  redirectWithToast("/", "로그아웃되었습니다", "positive");
 }
 
 export async function updateProfileAction(
@@ -386,13 +433,7 @@ export async function createGroupAction(
   const context = await upsertProfile();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        "/",
-        "먼저 로그인해 주세요",
-        "cautionary",
-      ),
-    );
+    redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
   const inviteCode = generateInviteCode();
@@ -423,13 +464,12 @@ export async function createGroupAction(
     return buildFormState("error", "모임 생성 마무리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  revalidatePath(`/group/${groupInsert.data.id}`);
-  redirect(
-    buildRedirectWithToast(
-      `/group/${groupInsert.data.id}`,
-      "모임을 만들었습니다",
-      "positive",
-    ),
+  revalidateGroupRoutes(groupInsert.data.id);
+  revalidateGroupDirectory();
+  redirectWithToast(
+    `/group/${groupInsert.data.id}`,
+    "모임을 만들었습니다",
+    "positive",
   );
 }
 
@@ -453,13 +493,7 @@ export async function joinGroupAction(
   });
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        "/",
-        "먼저 로그인해 주세요",
-        "cautionary",
-      ),
-    );
+    redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
   const inviteCode = parsed.data.inviteCode.trim().toUpperCase();
@@ -497,13 +531,11 @@ export async function joinGroupAction(
     .maybeSingle();
 
   if (existingQuery.data) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${group.id}`,
-        "이미 참여한 모임입니다",
-        "cautionary",
-        "이미 이 모임에 참여해 있습니다.",
-      ),
+    redirectWithToast(
+      `/group/${group.id}`,
+      "이미 참여한 모임입니다",
+      "cautionary",
+      "이미 이 모임에 참여해 있습니다.",
     );
   }
 
@@ -517,14 +549,9 @@ export async function joinGroupAction(
     return buildFormState("error", "모임에 참여하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  revalidatePath(`/group/${group.id}`);
-  redirect(
-    buildRedirectWithToast(
-      `/group/${group.id}`,
-      "모임에 참여했습니다",
-      "positive",
-    ),
-  );
+  revalidateGroupRoutes(group.id);
+  revalidateGroupDirectory();
+  redirectWithToast(`/group/${group.id}`, "모임에 참여했습니다", "positive");
 }
 
 export async function saveReadingLogAction(
@@ -547,13 +574,7 @@ export async function saveReadingLogAction(
   const context = await requireUser();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        "/",
-        "먼저 로그인해 주세요",
-        "cautionary",
-      ),
-    );
+    redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
   const todayKey = getTodayKey();
@@ -605,18 +626,17 @@ export async function saveReadingLogAction(
     return buildFormState("error", "독서 기록을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  revalidatePath(`/group/${parsed.data.groupId}`);
-  revalidatePath(`/group/${parsed.data.groupId}/log`);
-  revalidatePath(`/group/${parsed.data.groupId}/members`);
-  revalidatePath(`/group/${parsed.data.groupId}/books`);
-  revalidatePath(`/group/${parsed.data.groupId}/weekly`);
+  revalidateGroupRoutes(parsed.data.groupId, {
+    includeLog: true,
+    includeMembers: true,
+    includeBooks: true,
+    includeWeekly: true,
+  });
 
-  redirect(
-    buildRedirectWithToast(
-      `/group/${parsed.data.groupId}`,
-      "독서 기록을 저장했습니다",
-      "positive",
-    ),
+  redirectWithToast(
+    `/group/${parsed.data.groupId}`,
+    "독서 기록을 저장했습니다",
+    "positive",
   );
 }
 
@@ -675,10 +695,11 @@ export async function createBookAction(
     return buildFormState("error", "책을 추가하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  revalidatePath(`/group/${parsed.data.groupId}`);
-  revalidatePath(`/group/${parsed.data.groupId}/log`);
-  revalidatePath(`/group/${parsed.data.groupId}/books`);
-  revalidatePath(`/group/${parsed.data.groupId}/members`);
+  revalidateGroupRoutes(parsed.data.groupId, {
+    includeLog: true,
+    includeMembers: true,
+    includeBooks: true,
+  });
   return buildFormState("success", "모임 책장에 책을 추가했습니다.");
 }
 
@@ -691,25 +712,13 @@ export async function updateBookStatusAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(
-      buildRedirectWithToast(
-        "/groups",
-        "책 상태를 바꾸지 못했습니다",
-        "negative",
-      ),
-    );
+    redirectWithToast("/groups", "책 상태를 바꾸지 못했습니다", "negative");
   }
 
   const context = await requireUser();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        "/",
-        "먼저 로그인해 주세요",
-        "cautionary",
-      ),
-    );
+    redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
   const currentBook = await context.supabase
@@ -720,22 +729,18 @@ export async function updateBookStatusAction(formData: FormData) {
     .maybeSingle();
 
   if (currentBook.error || !currentBook.data) {
-    redirect(
-      buildRedirectWithToast(
-        redirectTo || `/group/${parsed.data.groupId}/books`,
-        "책을 찾지 못했습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      redirectTo || `/group/${parsed.data.groupId}/books`,
+      "책을 찾지 못했습니다",
+      "negative",
     );
   }
 
   if (currentBook.data.created_by !== context.user.id) {
-    redirect(
-      buildRedirectWithToast(
-        redirectTo || `/group/${parsed.data.groupId}/books`,
-        "내 책만 바꿀 수 있습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      redirectTo || `/group/${parsed.data.groupId}/books`,
+      "내 책만 바꿀 수 있습니다",
+      "negative",
     );
   }
 
@@ -748,12 +753,10 @@ export async function updateBookStatusAction(formData: FormData) {
     );
 
     if (activeReadingBookCount >= MAX_ACTIVE_READING_BOOKS) {
-      redirect(
-        buildRedirectWithToast(
-          redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
-          `읽는 중인 책은 ${MAX_ACTIVE_READING_BOOKS}권까지만 둘 수 있습니다`,
-          "cautionary",
-        ),
+      redirectWithToast(
+        redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
+        `읽는 중인 책은 ${MAX_ACTIVE_READING_BOOKS}권까지만 둘 수 있습니다`,
+        "cautionary",
       );
     }
   }
@@ -765,27 +768,24 @@ export async function updateBookStatusAction(formData: FormData) {
     .eq("id", parsed.data.bookId);
 
   if (update.error) {
-    redirect(
-      buildRedirectWithToast(
-        redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
-        "책 상태를 바꾸지 못했습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
+      "책 상태를 바꾸지 못했습니다",
+      "negative",
     );
   }
 
-  revalidatePath(`/group/${parsed.data.groupId}`);
-  revalidatePath(`/group/${parsed.data.groupId}/log`);
-  revalidatePath(`/group/${parsed.data.groupId}/books`);
-  revalidatePath(`/group/${parsed.data.groupId}/members`);
-  revalidatePath(`/group/${parsed.data.groupId}/weekly`);
+  revalidateGroupRoutes(parsed.data.groupId, {
+    includeLog: true,
+    includeMembers: true,
+    includeBooks: true,
+    includeWeekly: true,
+  });
 
-  redirect(
-    buildRedirectWithToast(
-      redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
-      parsed.data.status === "reading" ? "읽는 중으로 바꿨습니다" : "완독으로 바꿨습니다",
-      "positive",
-    ),
+  redirectWithToast(
+    redirectTo || `/group/${parsed.data.groupId}/books?book=${parsed.data.bookId}`,
+    parsed.data.status === "reading" ? "읽는 중으로 바꿨습니다" : "완독으로 바꿨습니다",
+    "positive",
   );
 }
 
@@ -814,15 +814,9 @@ export async function updateGroupSettingsAction(
     );
   }
 
-  const ownerCheck = await context.supabase
-    .from("groups")
-    .select("owner_id")
-    .eq("id", parsed.data.groupId)
-    .single();
+  const ownerId = await getGroupOwnerId(context.supabase, parsed.data.groupId);
 
-  const owner = ownerCheck.data as GroupOwnerRow | null;
-
-  if (owner?.owner_id !== context.user.id) {
+  if (ownerId !== context.user.id) {
     return buildFormState(
       "error",
       "이 설정은 모임장만 수정할 수 있습니다.",
@@ -843,8 +837,8 @@ export async function updateGroupSettingsAction(
     return buildFormState("error", "모임 설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
-  revalidatePath(`/group/${parsed.data.groupId}`);
-  revalidatePath(`/group/${parsed.data.groupId}/settings`);
+  revalidateGroupRoutes(parsed.data.groupId, { includeSettings: true });
+  revalidateGroupDirectory();
   return buildFormState("success", "모임 설정을 저장했습니다.");
 }
 
@@ -853,30 +847,16 @@ export async function regenerateInviteCodeAction(formData: FormData) {
   const context = await requireUser();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "로그인이 필요합니다",
-        "cautionary",
-      ),
-    );
+    redirectWithToast(`/group/${groupId}/settings`, "로그인이 필요합니다", "cautionary");
   }
 
-  const ownerCheck = await context.supabase
-    .from("groups")
-    .select("owner_id")
-    .eq("id", groupId)
-    .single();
+  const ownerId = await getGroupOwnerId(context.supabase, groupId);
 
-  const owner = ownerCheck.data as GroupOwnerRow | null;
-
-  if (ownerCheck.error || owner?.owner_id !== context.user.id) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "모임장만 초대 코드를 바꿀 수 있습니다",
-        "cautionary",
-      ),
+  if (ownerId !== context.user.id) {
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "모임장만 초대 코드를 바꿀 수 있습니다",
+      "cautionary",
     );
   }
 
@@ -886,22 +866,19 @@ export async function regenerateInviteCodeAction(formData: FormData) {
     .eq("id", groupId);
 
   if (update.error) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "초대 코드를 다시 만들지 못했습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "초대 코드를 다시 만들지 못했습니다",
+      "negative",
     );
   }
 
-  revalidatePath(`/group/${groupId}/settings`);
-  redirect(
-    buildRedirectWithToast(
-      `/group/${groupId}/settings`,
-      "초대 코드를 다시 만들었습니다",
-      "positive",
-    ),
+  revalidateGroupRoutes(groupId, { includeSettings: true });
+  revalidateGroupDirectory();
+  redirectWithToast(
+    `/group/${groupId}/settings`,
+    "초대 코드를 다시 만들었습니다",
+    "positive",
   );
 }
 
@@ -911,40 +888,24 @@ export async function removeMemberAction(formData: FormData) {
   const context = await requireUser();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "로그인이 필요합니다",
-        "cautionary",
-      ),
-    );
+    redirectWithToast(`/group/${groupId}/settings`, "로그인이 필요합니다", "cautionary");
   }
 
-  const ownerCheck = await context.supabase
-    .from("groups")
-    .select("owner_id")
-    .eq("id", groupId)
-    .single();
+  const ownerId = await getGroupOwnerId(context.supabase, groupId);
 
-  const owner = ownerCheck.data as GroupOwnerRow | null;
-
-  if (ownerCheck.error || owner?.owner_id !== context.user.id) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "모임장만 멤버를 내보낼 수 있습니다",
-        "cautionary",
-      ),
+  if (ownerId !== context.user.id) {
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "모임장만 멤버를 내보낼 수 있습니다",
+      "cautionary",
     );
   }
 
   if (memberUserId === context.user.id) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "모임장은 스스로 나갈 수 없습니다",
-        "cautionary",
-      ),
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "모임장은 스스로 나갈 수 없습니다",
+      "cautionary",
     );
   }
 
@@ -955,26 +916,20 @@ export async function removeMemberAction(formData: FormData) {
     .eq("user_id", memberUserId);
 
   if (remove.error) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "멤버를 내보내지 못했습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "멤버를 내보내지 못했습니다",
+      "negative",
     );
   }
 
-  revalidatePath(`/group/${groupId}`);
-  revalidatePath(`/group/${groupId}/members`);
-  revalidatePath(`/group/${groupId}/weekly`);
-  revalidatePath(`/group/${groupId}/settings`);
-  redirect(
-    buildRedirectWithToast(
-      `/group/${groupId}/settings`,
-      "멤버를 내보냈습니다",
-      "positive",
-    ),
-  );
+  revalidateGroupRoutes(groupId, {
+    includeMembers: true,
+    includeWeekly: true,
+    includeSettings: true,
+  });
+  revalidateGroupDirectory();
+  redirectWithToast(`/group/${groupId}/settings`, "멤버를 내보냈습니다", "positive");
 }
 
 export async function deleteGroupAction(formData: FormData) {
@@ -982,52 +937,30 @@ export async function deleteGroupAction(formData: FormData) {
   const context = await requireUser();
 
   if (!context) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "로그인이 필요합니다",
-        "cautionary",
-      ),
-    );
+    redirectWithToast(`/group/${groupId}/settings`, "로그인이 필요합니다", "cautionary");
   }
 
-  const ownerCheck = await context.supabase
-    .from("groups")
-    .select("owner_id")
-    .eq("id", groupId)
-    .single();
+  const ownerId = await getGroupOwnerId(context.supabase, groupId);
 
-  const owner = ownerCheck.data as GroupOwnerRow | null;
-
-  if (ownerCheck.error || owner?.owner_id !== context.user.id) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "모임장만 모임을 삭제할 수 있습니다",
-        "cautionary",
-      ),
+  if (ownerId !== context.user.id) {
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "모임장만 모임을 삭제할 수 있습니다",
+      "cautionary",
     );
   }
 
   const remove = await context.supabase.from("groups").delete().eq("id", groupId);
 
   if (remove.error) {
-    redirect(
-      buildRedirectWithToast(
-        `/group/${groupId}/settings`,
-        "모임을 삭제하지 못했습니다",
-        "negative",
-      ),
+    redirectWithToast(
+      `/group/${groupId}/settings`,
+      "모임을 삭제하지 못했습니다",
+      "negative",
     );
   }
 
   revalidatePath("/");
-  revalidatePath("/groups");
-  redirect(
-    buildRedirectWithToast(
-      "/groups",
-      "모임을 삭제했습니다",
-      "positive",
-    ),
-  );
+  revalidateGroupDirectory();
+  redirectWithToast("/groups", "모임을 삭제했습니다", "positive");
 }

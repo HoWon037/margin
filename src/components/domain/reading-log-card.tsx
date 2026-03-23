@@ -21,17 +21,29 @@ export function ReadingLogCard({ log }: ReadingLogCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Avatar name={log.member.nickname} tone={log.member.avatarColor} />
-          <div className="space-y-1">
-            <p className="type-label text-label-strong">{log.member.nickname}</p>
+          <div className="min-w-0 space-y-1">
+            <p className="truncate type-label text-label-strong">
+              {log.member.nickname}
+            </p>
             <p className="type-caption text-label-assistive">
               {formatDateShort(log.date)} · {log.weekdayLabel}
             </p>
           </div>
         </div>
-        <div className="min-w-0 space-y-1 text-right">
-          <p className="type-headline text-label-strong">{bookTitle}</p>
+        <div className="min-w-0 max-w-[52%] space-y-1 text-right">
+          <p
+            className="truncate type-headline text-label-strong"
+            title={bookTitle}
+          >
+            {bookTitle}
+          </p>
           {bookAuthor ? (
-            <p className="type-label-reading text-label-alternative">{bookAuthor}</p>
+            <p
+              className="truncate type-label-reading text-label-alternative"
+              title={bookAuthor}
+            >
+              {bookAuthor}
+            </p>
           ) : null}
         </div>
       </div>

@@ -36,20 +36,23 @@ export function MemberCard({
               <Avatar name={member.nickname} size="sm" tone={member.avatarColor} />
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
-                  <p className="truncate type-label text-label-strong">
+                  <p
+                    className="truncate type-label text-label-strong"
+                    title={member.nickname}
+                  >
                     {member.nickname}
                   </p>
                   {member.role === "owner" ? (
                     <Chip tone="primary">{formatMemberRole(member.role)}</Chip>
                   ) : null}
                 </div>
-                <p className="type-caption text-label-assistive">
+                <p className="truncate type-caption text-label-assistive">
                   {formatPages(member.totalPagesThisWeek)} · 읽는 책 {member.activeBooks.length}권
                 </p>
               </div>
             </div>
 
-            <div className="shrink-0 rounded-full bg-fill-alternative px-3 py-1.5 text-[11px] font-medium leading-none text-label-strong">
+            <div className="shrink-0 rounded-full bg-fill-alternative px-3 py-1.5 text-[11px] font-medium leading-none text-label-strong tabular-nums">
               이번 주 {member.daysReadThisWeek}일
             </div>
           </div>

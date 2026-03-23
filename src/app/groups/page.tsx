@@ -22,7 +22,7 @@ export default async function GroupsPage({ searchParams }: GroupsPageProps) {
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1120px] px-4 py-10 sm:px-5 lg:py-14">
       <div className="space-y-5">
-        <div className="flex flex-col gap-4 rounded-xl border border-line-solid bg-bg-normal p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="chrome-surface flex flex-col gap-4 rounded-xl border border-line-solid bg-bg-normal p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             {directory.user ? (
               <ProfileLink href="/profile?returnTo=/groups" user={directory.user} />

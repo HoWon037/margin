@@ -25,6 +25,7 @@ export function Sidebar({ group }: SidebarProps) {
           {navItems.map((item) => (
             <Link
               key={item.href}
+              aria-current={item.active ? "page" : undefined}
               className={`flex items-center justify-between rounded-xl px-3 py-3 type-label transition ${
                 item.active
                   ? "bg-fill-strong text-label-strong"

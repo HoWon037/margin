@@ -22,6 +22,7 @@ export function BottomNav({ groupId }: { groupId: string }) {
           return (
             <Link
               key={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex min-w-[64px] items-center justify-center rounded-full px-3 py-2 text-center type-caption transition",
                 active

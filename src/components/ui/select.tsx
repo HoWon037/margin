@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes } from "react";
+import { useId, type SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -16,13 +16,18 @@ export function Select({
   children,
   ...props
 }: SelectProps) {
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
   const helperText = error ?? hint;
+  const helperId = helperText ? `${selectId}-helper` : undefined;
 
   return (
-    <label className="flex w-full flex-col gap-2">
+    <label className="flex w-full flex-col gap-2" htmlFor={selectId}>
       <span className="type-label text-label-strong">{label}</span>
       <select
-        id={id}
+        id={selectId}
+        aria-describedby={helperId}
+        aria-invalid={error ? true : undefined}
         className={cn(
           "field-surface h-12 rounded-lg border border-line-solid bg-bg-normal px-4 text-label-normal outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10",
           error && "border-negative focus:border-negative focus:ring-negative/10",
@@ -34,6 +39,7 @@ export function Select({
       </select>
       {helperText ? (
         <span
+          id={helperId}
           className={cn(
             "type-caption",
             error ? "text-negative" : "text-label-assistive",

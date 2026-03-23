@@ -16,6 +16,14 @@ function getCurrentTheme(): Theme {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
+function prefersReducedMotion() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.dataset.theme = theme;
@@ -25,8 +33,17 @@ function applyTheme(theme: Theme) {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const toggleTheme = () => {
+    if (document.documentElement.classList.contains("theme-transitioning")) {
+      return;
+    }
+
     const nextTheme: Theme = getCurrentTheme() === "dark" ? "light" : "dark";
     const root = document.documentElement;
+
+    if (prefersReducedMotion()) {
+      applyTheme(nextTheme);
+      return;
+    }
 
     const run = () => {
       root.classList.add("theme-transitioning");

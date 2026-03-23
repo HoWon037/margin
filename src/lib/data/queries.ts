@@ -17,13 +17,18 @@ import type {
   SourceUser,
   UserSummary,
 } from "@/lib/types";
-import { formatGoal } from "@/lib/utils";
+import { clampPercent, formatGoal } from "@/lib/utils";
 
 type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 type UserRow = Database["public"]["Tables"]["users"]["Row"];
 type BookRow = Database["public"]["Tables"]["books"]["Row"];
 type ReadingLogRow = Database["public"]["Tables"]["reading_logs"]["Row"];
+
+type WeeklyDateMeta = {
+  date: string;
+  label: string;
+};
 
 function toUserSummary(user: SourceUser): UserSummary {
   return {
@@ -32,6 +37,74 @@ function toUserSummary(user: SourceUser): UserSummary {
     nickname: user.nickname,
     avatarColor: user.avatarColor,
   };
+}
+
+function buildUserSummaryFromAuth(
+  user: {
+    id: string;
+    email?: string | null;
+    user_metadata: Record<string, unknown>;
+  },
+  profile?: UserRow | null,
+): UserSummary {
+  return {
+    id: user.id,
+    email: user.email ?? profile?.email ?? "",
+    nickname:
+      profile?.nickname ??
+      (typeof user.user_metadata.nickname === "string"
+        ? user.user_metadata.nickname
+        : undefined) ??
+      (typeof user.user_metadata.full_name === "string"
+        ? user.user_metadata.full_name
+        : undefined) ??
+      user.email?.split("@")[0] ??
+      "독자",
+    avatarColor: profile?.avatar_color ?? "slate",
+  };
+}
+
+function buildFallbackUserRow(
+  user: {
+    id: string;
+    email?: string | null;
+    user_metadata: Record<string, unknown>;
+  },
+): UserRow {
+  const loginId =
+    typeof user.user_metadata.loginId === "string"
+      ? user.user_metadata.loginId
+      : user.email?.split("@")[0] ?? "reader";
+  const nickname =
+    typeof user.user_metadata.nickname === "string"
+      ? user.user_metadata.nickname
+      : typeof user.user_metadata.full_name === "string"
+        ? user.user_metadata.full_name
+        : user.email?.split("@")[0] ?? "독자";
+  const avatarColor =
+    typeof user.user_metadata.avatarColor === "string"
+      ? user.user_metadata.avatarColor
+      : "slate";
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    login_id: loginId,
+    nickname,
+    avatar_color: avatarColor as UserRow["avatar_color"],
+    created_at: new Date().toISOString(),
+  };
+}
+
+function pushMapValue<T>(map: Map<string, T[]>, key: string, value: T) {
+  const current = map.get(key);
+
+  if (current) {
+    current.push(value);
+    return;
+  }
+
+  map.set(key, [value]);
 }
 
 function buildEnrichedLogs(dataset: SourceDataset) {
@@ -71,49 +144,90 @@ function buildEnrichedLogs(dataset: SourceDataset) {
     });
 }
 
-function buildBookSummary(
-  book: SourceBook,
-  enrichedLogs: EnrichedReadingLog[],
-  currentUserId: string,
-): BookSummary {
-  const bookLogs = enrichedLogs.filter((log) => log.book?.id === book.id);
-
-  return {
-    id: book.id,
-    title: book.title,
-    author: book.author,
-    totalPages: book.totalPages,
-    status: book.status,
-    totalLoggedPages: bookLogs.reduce((sum, log) => sum + log.pagesRead, 0),
-    myLoggedPages: bookLogs
-      .filter((log) => log.member.id === currentUserId)
-      .reduce((sum, log) => sum + log.pagesRead, 0),
-    createdBy: book.createdBy,
-  };
-}
-
 function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
   const enrichedLogs = buildEnrichedLogs(dataset);
   const todayKey = getTodayKey();
   const weekKeys = getWeekDates().map(toDateKey);
   const weekKeySet = new Set(weekKeys);
+  const weeklyDateMeta: WeeklyDateMeta[] = weekKeys.map((dateKey) => ({
+    date: dateKey,
+    label: formatWeekdayShort(dateKey),
+  }));
   const userMap = new Map(dataset.users.map((user) => [user.id, user]));
+  const logsByUser = new Map<string, EnrichedReadingLog[]>();
+  const weeklyLogsByUser = new Map<string, EnrichedReadingLog[]>();
+  const weeklyReadDatesByUser = new Map<string, Set<string>>();
+  const readingBooksByUser = new Map<
+    string,
+    Array<{ id: string; title: string; author: string; status: SourceBook["status"] }>
+  >();
+  const bookStatsById = new Map<
+    string,
+    { totalLoggedPages: number; myLoggedPages: number }
+  >();
+  const weeklyLogs: EnrichedReadingLog[] = [];
   const me = userMap.get(dataset.currentUserId);
 
   if (!me) {
     throw new Error("Current user missing from dataset.");
   }
 
+  for (const book of dataset.books) {
+    if (book.status !== "reading") {
+      continue;
+    }
+
+    pushMapValue(readingBooksByUser, book.createdBy, {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      status: book.status,
+    });
+  }
+
+  for (const log of enrichedLogs) {
+    pushMapValue(logsByUser, log.member.id, log);
+
+    if (weekKeySet.has(log.date)) {
+      pushMapValue(weeklyLogsByUser, log.member.id, log);
+      weeklyLogs.push(log);
+
+      const readDates = weeklyReadDatesByUser.get(log.member.id);
+      if (readDates) {
+        readDates.add(log.date);
+      } else {
+        weeklyReadDatesByUser.set(log.member.id, new Set([log.date]));
+      }
+    }
+
+    if (!log.book) {
+      continue;
+    }
+
+    const bookStats = bookStatsById.get(log.book.id) ?? {
+      totalLoggedPages: 0,
+      myLoggedPages: 0,
+    };
+    bookStats.totalLoggedPages += log.pagesRead;
+
+    if (log.member.id === dataset.currentUserId) {
+      bookStats.myLoggedPages += log.pagesRead;
+    }
+
+    bookStatsById.set(log.book.id, bookStats);
+  }
+
   const members = dataset.members
     .map((member) => {
       const user = userMap.get(member.userId);
-      const memberLogs = enrichedLogs.filter((log) => log.member.id === member.userId);
-      const weeklyLogs = memberLogs.filter((log) => weekKeySet.has(log.date));
-      const weeklyReadDays = weekKeys.map((dateKey) => ({
-        date: dateKey,
-        label: formatWeekdayShort(dateKey),
-        read: weeklyLogs.some((log) => log.date === dateKey),
-        isToday: dateKey === todayKey,
+      const memberLogs = logsByUser.get(member.userId) ?? [];
+      const memberWeeklyLogs = weeklyLogsByUser.get(member.userId) ?? [];
+      const weeklyReadDates = weeklyReadDatesByUser.get(member.userId) ?? new Set();
+      const weeklyReadDays = weeklyDateMeta.map(({ date, label }) => ({
+        date,
+        label,
+        read: weeklyReadDates.has(date),
+        isToday: date === todayKey,
       }));
 
       if (!user) {
@@ -128,20 +242,11 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
         avatarColor: user.avatarColor,
         role: member.role,
         joinedAt: member.joinedAt,
-        daysReadThisWeek: weeklyLogs.length,
-        totalPagesThisWeek: weeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
+        daysReadThisWeek: memberWeeklyLogs.length,
+        totalPagesThisWeek: memberWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
         weeklyReadDays,
         recentLogs: memberLogs.slice(0, 4),
-        activeBooks: dataset.books
-          .filter(
-            (book) => book.createdBy === member.userId && book.status === "reading",
-          )
-          .map((book) => ({
-            id: book.id,
-            title: book.title,
-            author: book.author,
-            status: book.status,
-          })),
+        activeBooks: readingBooksByUser.get(member.userId) ?? [],
       };
     })
     .sort((a, b) => {
@@ -152,12 +257,25 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
       return b.daysReadThisWeek - a.daysReadThisWeek || b.totalPagesThisWeek - a.totalPagesThisWeek;
     });
 
-  const books = dataset.books.map((book) =>
-    buildBookSummary(book, enrichedLogs, dataset.currentUserId),
-  );
-  const myWeeklyLogs = enrichedLogs.filter(
-    (log) => log.member.id === dataset.currentUserId && weekKeySet.has(log.date),
-  );
+  const books = dataset.books.map<BookSummary>((book) => {
+    const stats = bookStatsById.get(book.id) ?? {
+      totalLoggedPages: 0,
+      myLoggedPages: 0,
+    };
+
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      totalPages: book.totalPages,
+      status: book.status,
+      totalLoggedPages: stats.totalLoggedPages,
+      myLoggedPages: stats.myLoggedPages,
+      createdBy: book.createdBy,
+    };
+  });
+  const myWeeklyLogs = weeklyLogsByUser.get(dataset.currentUserId) ?? [];
+  const myWeeklyPages = myWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0);
 
   const ranking = members
     .map((member) => ({
@@ -172,8 +290,13 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
     }))
     .sort((a, b) => b.pages - a.pages);
 
-  const overviewBook =
-    [...books].sort((a, b) => b.totalLoggedPages - a.totalLoggedPages)[0] ?? null;
+  const overviewBook = books.reduce<BookSummary | null>((topBook, book) => {
+    if (!topBook || book.totalLoggedPages > topBook.totalLoggedPages) {
+      return book;
+    }
+
+    return topBook;
+  }, null);
 
   return {
     group: {
@@ -201,21 +324,17 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
       daysReadThisWeek: myWeeklyLogs.length,
       weeklyGoalProgress:
         dataset.group.weeklyGoalType === "days"
-          ? (myWeeklyLogs.length / dataset.group.weeklyGoalValue) * 100
-          : (myWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0) /
-              dataset.group.weeklyGoalValue) *
-            100,
+          ? clampPercent((myWeeklyLogs.length / dataset.group.weeklyGoalValue) * 100)
+          : clampPercent((myWeeklyPages / dataset.group.weeklyGoalValue) * 100),
       weeklyGoalLabel: formatGoal(
         dataset.group.weeklyGoalType,
         dataset.group.weeklyGoalValue,
       ),
-      pagesThisWeek: myWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
+      pagesThisWeek: myWeeklyPages,
     },
     weeklyOverview: {
-      totalLogs: enrichedLogs.filter((log) => weekKeySet.has(log.date)).length,
-      totalPages: enrichedLogs
-        .filter((log) => weekKeySet.has(log.date))
-        .reduce((sum, log) => sum + log.pagesRead, 0),
+      totalLogs: weeklyLogs.length,
+      totalPages: weeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
       ranking,
       mostReadBook: overviewBook,
     },
@@ -300,21 +419,7 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
   const userRows = (usersQuery.data ?? []) as UserRow[];
 
   if (!userRows.find((profile) => profile.id === user.id)) {
-    userRows.push({
-      id: user.id,
-      email: user.email ?? "",
-      login_id:
-        user.user_metadata.loginId ??
-        user.email?.split("@")[0] ??
-        "reader",
-      nickname:
-        user.user_metadata.nickname ??
-        user.user_metadata.full_name ??
-        user.email?.split("@")[0] ??
-        "독자",
-      avatar_color: "slate",
-      created_at: new Date().toISOString(),
-    });
+    userRows.push(buildFallbackUserRow(user));
   }
 
   return {
@@ -413,17 +518,7 @@ export const getCurrentUserSummary = cache(async () => {
 
   const profile = profileQuery.data as UserRow | null;
 
-  return {
-    id: user.id,
-    email: user.email ?? profile?.email ?? "",
-    nickname:
-      profile?.nickname ??
-      user.user_metadata.nickname ??
-      user.user_metadata.full_name ??
-      user.email?.split("@")[0] ??
-      "독자",
-    avatarColor: profile?.avatar_color ?? "slate",
-  };
+  return buildUserSummaryFromAuth(user, profile);
 });
 
 export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
@@ -472,17 +567,7 @@ export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
 
   if (!groupIds.length) {
     return {
-      user: {
-        id: user.id,
-        email: user.email ?? profile?.email ?? "",
-        nickname:
-          profile?.nickname ??
-          user.user_metadata.nickname ??
-          user.user_metadata.full_name ??
-          user.email?.split("@")[0] ??
-          "독자",
-        avatarColor: profile?.avatar_color ?? "slate",
-      },
+      user: buildUserSummaryFromAuth(user, profile),
       groups: [],
       demoGroup: null,
       isDemoMode: false,
@@ -495,6 +580,7 @@ export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
   ]);
 
   const groups = (groupsQuery.data ?? []) as GroupRow[];
+  const groupMap = new Map(groups.map((group) => [group.id, group]));
   const memberCounts = (memberCountsQuery.data ?? []) as Array<
     Pick<GroupMemberRow, "group_id">
   >;
@@ -505,7 +591,7 @@ export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
 
   const items = memberships
     .map<GroupDirectoryItem | null>((membership) => {
-      const group = groups.find((candidate) => candidate.id === membership.group_id);
+      const group = groupMap.get(membership.group_id);
 
       if (!group) {
         return null;
@@ -531,17 +617,7 @@ export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
     .sort((a, b) => b.group.createdAt.localeCompare(a.group.createdAt));
 
   return {
-    user: {
-      id: user.id,
-      email: user.email ?? profile?.email ?? "",
-      nickname:
-        profile?.nickname ??
-        user.user_metadata.nickname ??
-        user.user_metadata.full_name ??
-        user.email?.split("@")[0] ??
-        "독자",
-      avatarColor: profile?.avatar_color ?? "slate",
-    },
+    user: buildUserSummaryFromAuth(user, profile),
     groups: items,
     demoGroup: null,
     isDemoMode: false,

@@ -31,6 +31,34 @@ function buildFeedHref(groupId: string, view: "group" | "mine", page: number) {
   return query ? `/group/${groupId}?${query}` : `/group/${groupId}`;
 }
 
+function getPaginationPages(totalPages: number, currentPage: number) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 4, 5];
+  }
+
+  if (currentPage >= totalPages - 2) {
+    return [
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+
+  return [
+    currentPage - 2,
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    currentPage + 2,
+  ];
+}
+
 export default async function GroupHomePage({
   params,
   searchParams,
@@ -52,6 +80,7 @@ export default async function GroupHomePage({
   const currentPage = Number.isFinite(pageParam)
     ? Math.min(totalPages, Math.max(1, Math.floor(pageParam)))
     : 1;
+  const visiblePages = getPaginationPages(totalPages, currentPage);
   const paginatedLogs = visibleLogs.slice(
     (currentPage - 1) * LOGS_PER_PAGE,
     currentPage * LOGS_PER_PAGE,
@@ -78,7 +107,7 @@ export default async function GroupHomePage({
           >
             {workspace.hasLoggedToday ? "오늘 기록함" : "기록 대기"}
           </div>
-          <div className="inline-flex h-9 items-center rounded-[14px] bg-fill-alternative px-3 text-[12px] font-medium text-label-strong sm:h-10 sm:px-3.5 sm:text-[13px]">
+          <div className="inline-flex h-9 items-center rounded-[14px] bg-fill-alternative px-3 text-[12px] font-medium text-label-strong tabular-nums sm:h-10 sm:px-3.5 sm:text-[13px]">
             이번 주 기록: {workspace.personalSummary.daysReadThisWeek}일/
             {workspace.personalSummary.pagesThisWeek}페이지
           </div>
@@ -94,7 +123,7 @@ export default async function GroupHomePage({
           <Link
             className={buttonStyles({
               block: true,
-              className: "h-12 rounded-[18px] shadow-none sm:h-13",
+              className: "h-12 rounded-[18px] shadow-none sm:h-[52px]",
               size: "lg",
             })}
             href={`/group/${groupId}/log`}
@@ -132,9 +161,10 @@ export default async function GroupHomePage({
           />
         )}
         {visibleLogs.length > LOGS_PER_PAGE ? (
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 tabular-nums">
             <Link
               aria-disabled={currentPage === 1}
+              tabIndex={currentPage === 1 ? -1 : undefined}
               className={buttonStyles({
                 className: currentPage === 1 ? "pointer-events-none opacity-40" : "",
                 size: "sm",
@@ -146,18 +176,24 @@ export default async function GroupHomePage({
             </Link>
             <Link
               aria-disabled={currentPage === 1}
+              tabIndex={currentPage === 1 ? -1 : undefined}
               className={buttonStyles({
                 className: currentPage === 1 ? "pointer-events-none opacity-40" : "",
                 size: "sm",
                 variant: "secondary",
               })}
-              href={buildFeedHref(groupId, logView, currentPage - 1)}
+              href={buildFeedHref(
+                groupId,
+                logView,
+                currentPage === 1 ? 1 : currentPage - 1,
+              )}
             >
               {"<"}
             </Link>
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            {visiblePages.map((page) => (
               <Link
                 key={page}
+                aria-current={currentPage === page ? "page" : undefined}
                 className={buttonStyles({
                   className: currentPage === page ? "border-primary/20 bg-primary/10 text-primary" : "",
                   size: "sm",
@@ -170,18 +206,24 @@ export default async function GroupHomePage({
             ))}
             <Link
               aria-disabled={currentPage === totalPages}
+              tabIndex={currentPage === totalPages ? -1 : undefined}
               className={buttonStyles({
                 className:
                   currentPage === totalPages ? "pointer-events-none opacity-40" : "",
                 size: "sm",
                 variant: "secondary",
               })}
-              href={buildFeedHref(groupId, logView, currentPage + 1)}
+              href={buildFeedHref(
+                groupId,
+                logView,
+                currentPage === totalPages ? totalPages : currentPage + 1,
+              )}
             >
               {">"}
             </Link>
             <Link
               aria-disabled={currentPage === totalPages}
+              tabIndex={currentPage === totalPages ? -1 : undefined}
               className={buttonStyles({
                 className:
                   currentPage === totalPages ? "pointer-events-none opacity-40" : "",

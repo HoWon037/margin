@@ -18,12 +18,14 @@ export function JoinGroupForm({ defaultCode }: { defaultCode?: string }) {
   return (
     <form action={formAction} className="space-y-5">
       <TextField
+        autoCapitalize="characters"
         defaultValue={defaultCode}
         error={state.fieldErrors?.inviteCode?.[0]}
         label="초대 코드"
         name="inviteCode"
         placeholder="MARGIN7"
         required
+        spellCheck={false}
       />
       <TextField
         error={state.fieldErrors?.nickname?.[0]}

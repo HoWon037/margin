@@ -33,8 +33,15 @@ export function BookCard({
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <p className="type-headline text-label-strong">{book.title}</p>
-              <p className="type-label-reading text-label-alternative">{book.author}</p>
+              <p className="truncate type-headline text-label-strong" title={book.title}>
+                {book.title}
+              </p>
+              <p
+                className="truncate type-label-reading text-label-alternative"
+                title={book.author}
+              >
+                {book.author}
+              </p>
             </div>
             <Chip tone={book.status === "reading" ? "primary" : "neutral"}>
               {formatBookStatus(book.status)}

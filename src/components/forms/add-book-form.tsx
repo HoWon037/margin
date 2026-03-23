@@ -34,7 +34,7 @@ export function AddBookForm({ groupId }: { groupId: string }) {
       <form ref={formRef} action={formAction} className="space-y-4">
         <input name="groupId" type="hidden" value={groupId} />
 
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)_128px]">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)_128px]">
           <div className="min-w-0">
             <TextField
               className="w-full"
@@ -55,7 +55,7 @@ export function AddBookForm({ groupId }: { groupId: string }) {
               required
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-1">
             <TextField
               className="w-full"
               error={state.fieldErrors?.totalPages?.[0]}

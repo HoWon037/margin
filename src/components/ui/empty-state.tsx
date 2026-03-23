@@ -22,6 +22,10 @@ export function EmptyState({
   secondaryHref,
   className,
 }: EmptyStateProps) {
+  const hasActions = Boolean(
+    (actionLabel && actionHref) || (secondaryLabel && secondaryHref),
+  );
+
   return (
     <Card className={cn("space-y-4 text-center", className)}>
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fill-normal">
@@ -29,23 +33,27 @@ export function EmptyState({
       </div>
       <div className="space-y-2">
         <h3 className="type-headline text-label-strong">{title}</h3>
-        <p className="type-body text-label-alternative">{description}</p>
+        <p className="mx-auto max-w-[34rem] type-body text-label-alternative">
+          {description}
+        </p>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        {actionLabel && actionHref ? (
-          <Link className={buttonStyles({ variant: "primary", size: "md" })} href={actionHref}>
-            {actionLabel}
-          </Link>
-        ) : null}
-        {secondaryLabel && secondaryHref ? (
-          <Link
-            className={buttonStyles({ variant: "secondary", size: "md" })}
-            href={secondaryHref}
-          >
-            {secondaryLabel}
-          </Link>
-        ) : null}
-      </div>
+      {hasActions ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          {actionLabel && actionHref ? (
+            <Link className={buttonStyles({ variant: "primary", size: "md" })} href={actionHref}>
+              {actionLabel}
+            </Link>
+          ) : null}
+          {secondaryLabel && secondaryHref ? (
+            <Link
+              className={buttonStyles({ variant: "secondary", size: "md" })}
+              href={secondaryHref}
+            >
+              {secondaryLabel}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </Card>
   );
 }

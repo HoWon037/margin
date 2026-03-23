@@ -22,6 +22,7 @@ export function Tabs({ items, className }: TabsProps) {
       {items.map((item) => (
         <Link
           key={item.href}
+          aria-current={item.active ? "page" : undefined}
           className={cn(
             "relative inline-flex h-9 min-w-0 items-center justify-center overflow-hidden px-1.5 pb-2.5 text-center whitespace-nowrap text-[12px] leading-none font-medium transition sm:h-10 sm:px-2 sm:pb-3 sm:text-[13px] sm:leading-5",
             item.active

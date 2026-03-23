@@ -34,6 +34,7 @@ export function TopBar({
 
   useEffect(() => {
     const mobileQuery = window.matchMedia("(max-width: 767px)");
+    let frameId = 0;
 
     const updateFloatingState = () => {
       const nextValue = mobileQuery.matches && window.scrollY > 18;
@@ -42,22 +43,36 @@ export function TopBar({
       );
     };
 
+    const scheduleUpdate = () => {
+      if (frameId) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        updateFloatingState();
+      });
+    };
+
     updateFloatingState();
-    window.addEventListener("scroll", updateFloatingState, { passive: true });
-    window.addEventListener("resize", updateFloatingState);
-    mobileQuery.addEventListener("change", updateFloatingState);
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    mobileQuery.addEventListener("change", scheduleUpdate);
 
     return () => {
-      window.removeEventListener("scroll", updateFloatingState);
-      window.removeEventListener("resize", updateFloatingState);
-      mobileQuery.removeEventListener("change", updateFloatingState);
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      mobileQuery.removeEventListener("change", scheduleUpdate);
     };
   }, []);
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
+        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,padding] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
         isFloatingMobile
           ? "pointer-events-none border-transparent bg-transparent shadow-none"
           : "",
@@ -65,17 +80,17 @@ export function TopBar({
     >
       <div
         className={cn(
-          "relative z-10 mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
+          "relative z-10 mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
           isFloatingMobile && "pt-3",
         )}
       >
         <div
           className={cn(
-            "flex items-center justify-between gap-4 pb-3 transition-[padding,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+            "flex items-center justify-between gap-4 pb-3 transition-[padding,transform,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]",
             isFloatingMobile && "translate-y-0.5 pb-1",
           )}
         >
-          <div className="flex min-w-0 items-center gap-3 rounded-full border border-transparent px-0 py-0 transform-gpu transition-[padding,border-color,background-color,box-shadow,transform,opacity] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]">
+          <div className="flex min-w-0 items-center gap-3 rounded-full border border-transparent px-0 py-0 transform-gpu transition-[padding,border-color,background-color,box-shadow,transform,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]">
             <ProfileLink
               className={cn(
                 "max-w-[180px] sm:max-w-[220px]",
@@ -91,7 +106,7 @@ export function TopBar({
           </div>
           <div
             className={cn(
-              "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-600 ease-[cubic-bezier(0.18,0.9,0.32,1)]",
+              "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]",
               isFloatingMobile &&
                 "pointer-events-auto chrome-surface border-line-solid shadow-sm",
             )}

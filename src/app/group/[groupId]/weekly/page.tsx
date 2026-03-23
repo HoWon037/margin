@@ -47,7 +47,7 @@ export default async function WeeklyPage({
               <div key={entry.member.id} className="space-y-2">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fill-normal type-caption text-label-assistive">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fill-normal type-caption text-label-assistive tabular-nums">
                       {index + 1}
                     </div>
                     <div>
@@ -59,7 +59,7 @@ export default async function WeeklyPage({
                       </p>
                     </div>
                   </div>
-                  <p className="type-label text-label-strong">
+                  <p className="type-label text-label-strong tabular-nums">
                     {formatPages(entry.pages)}
                   </p>
                 </div>
@@ -82,7 +82,7 @@ export default async function WeeklyPage({
             <div className="rounded-2xl bg-fill-alternative p-4">
               <div className="flex items-center justify-between gap-4">
                 <p className="type-label text-label-assistive">총 독서 기록</p>
-                <p className="type-label text-label-strong">
+                <p className="type-label text-label-strong tabular-nums">
                   {workspace.weeklyOverview.totalLogs}회
                 </p>
               </div>
@@ -90,7 +90,7 @@ export default async function WeeklyPage({
             <div className="rounded-2xl bg-fill-alternative p-4">
               <div className="flex items-center justify-between gap-4">
                 <p className="type-label text-label-assistive">총 읽은 페이지</p>
-                <p className="type-label text-label-strong">
+                <p className="type-label text-label-strong tabular-nums">
                   {formatPages(workspace.weeklyOverview.totalPages)}
                 </p>
               </div>
@@ -98,7 +98,7 @@ export default async function WeeklyPage({
             <div className="rounded-2xl bg-fill-alternative p-4">
               <div className="flex items-center justify-between gap-4">
                 <p className="type-label text-label-assistive">목표 달성</p>
-                <p className="type-label text-label-strong">
+                <p className="type-label text-label-strong tabular-nums">
                   {achievedMemberCount}명/{workspace.members.length}명
                 </p>
               </div>

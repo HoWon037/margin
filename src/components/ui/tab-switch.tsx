@@ -18,7 +18,9 @@ export function TabSwitch({
 }: TabSwitchProps) {
   return (
     <div
+      aria-label="전환"
       className={cn("grid w-full border-b border-line-solid", className)}
+      role="tablist"
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map((item) => {
@@ -26,6 +28,7 @@ export function TabSwitch({
 
         return (
           <button
+            aria-selected={active}
             key={item.value}
             className={cn(
               "relative inline-flex h-10 min-w-0 items-center justify-center pb-3 text-center type-label transition",
@@ -34,6 +37,8 @@ export function TabSwitch({
                 : "text-label-alternative md:hover:text-label-strong",
             )}
             onClick={() => onChange(item.value)}
+            role="tab"
+            tabIndex={active ? 0 : -1}
             type="button"
           >
             {item.label}
