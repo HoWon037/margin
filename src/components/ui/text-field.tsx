@@ -24,7 +24,7 @@ export function TextField({
       <input
         id={id}
         className={cn(
-          "h-12 rounded-lg border border-line-solid bg-bg-normal px-4 text-label-normal outline-none transition placeholder:text-label-assistive focus:border-primary focus:ring-4 focus:ring-primary/10",
+          "field-surface h-12 rounded-lg border border-line-solid bg-bg-normal px-4 text-label-normal outline-none transition placeholder:text-label-assistive focus:border-primary focus:ring-4 focus:ring-primary/10",
           error && "border-negative focus:border-negative focus:ring-negative/10",
           className,
         )}

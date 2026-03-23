@@ -16,7 +16,7 @@ export function BottomNav({ groupId }: { groupId: string }) {
 
   return (
     <nav className="mobile-safe-bottom fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 md:hidden">
-      <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-line-solid/90 bg-bg-normal/92 p-1.5 shadow-sm backdrop-blur-xl">
+      <div className="chrome-surface pointer-events-auto inline-flex items-center gap-1 rounded-full border border-line-solid/90 bg-bg-normal/92 p-1.5 shadow-sm backdrop-blur-xl">
         {items.map((item) => {
           const active = item.href === pathname;
           return (

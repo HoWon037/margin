@@ -24,10 +24,10 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-5">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,rgba(91,108,255,0.14),transparent_56%)]" />
+      <div className="entry-ambient pointer-events-none absolute inset-x-0 top-0 h-72" />
       <div className="w-full max-w-[460px]">
         <Card elevated className="surface-soft relative overflow-hidden rounded-[28px] border-white/80 p-6 sm:p-8">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(91,108,255,0.09),transparent)]" />
+          <div className="entry-card-sheen pointer-events-none absolute inset-x-0 top-0 h-28" />
           <div className="relative space-y-6">
             <div className="flex items-center gap-4">
               <span className="inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-label-strong text-lg font-semibold text-white shadow-xs">

@@ -11,7 +11,7 @@ const variantStyles = {
   primary:
     "bg-primary text-white shadow-xs transition md:hover:bg-primary-strong md:hover:-translate-y-px",
   secondary:
-    "border border-line-solid bg-bg-normal text-label-strong transition md:hover:bg-fill-alternative md:hover:-translate-y-px",
+    "chrome-surface border border-line-solid bg-bg-normal text-label-strong transition md:hover:bg-fill-alternative md:hover:-translate-y-px",
   ghost:
     "bg-transparent text-label-alternative transition md:hover:bg-fill-normal md:hover:text-label-strong",
   danger:
