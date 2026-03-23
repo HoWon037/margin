@@ -17,7 +17,7 @@ export function ProfileLink({
   return (
     <Link
       className={cn(
-        "chrome-surface inline-flex min-w-0 items-center gap-3 rounded-full border border-line-solid/90 bg-bg-normal/90 px-2.5 py-2 shadow-xs transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:hover:bg-fill-alternative",
+        "chrome-surface inline-flex min-w-0 items-center gap-3 rounded-full border border-line-solid/90 px-2.5 py-2 shadow-xs transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:hover:bg-fill-alternative",
         className,
       )}
       href={href}

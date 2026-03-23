@@ -1,11 +1,23 @@
 import { cn } from "@/lib/cn";
 import type { ToastTone } from "@/lib/types";
 
-const toneMap: Record<ToastTone, string> = {
-  primary: "border-primary/15 bg-primary/8 text-primary",
-  positive: "border-positive/15 bg-positive/8 text-positive",
-  cautionary: "border-cautionary/15 bg-cautionary/8 text-cautionary",
-  negative: "border-negative/15 bg-negative/8 text-negative",
+const toneMap: Record<ToastTone, { container: string; title: string }> = {
+  primary: {
+    container: "chrome-surface border-primary/22",
+    title: "text-primary",
+  },
+  positive: {
+    container: "chrome-surface border-positive/22",
+    title: "text-positive",
+  },
+  cautionary: {
+    container: "chrome-surface border-cautionary/22",
+    title: "text-cautionary",
+  },
+  negative: {
+    container: "chrome-surface border-negative/22",
+    title: "text-negative",
+  },
 };
 
 interface ToastProps {
@@ -29,13 +41,15 @@ export function Toast({
       aria-live={isAssertive ? "assertive" : "polite"}
       className={cn(
         "rounded-lg border px-4 py-3 shadow-xs",
-        toneMap[tone],
+        toneMap[tone].container,
         className,
       )}
       role={isAssertive ? "alert" : "status"}
     >
-      <p className="type-label">{title}</p>
-      {description ? <p className="mt-1 type-caption">{description}</p> : null}
+      <p className={cn("type-label", toneMap[tone].title)}>{title}</p>
+      {description ? (
+        <p className="mt-1 type-caption text-label-alternative">{description}</p>
+      ) : null}
     </div>
   );
 }

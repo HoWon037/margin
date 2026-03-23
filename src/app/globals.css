@@ -31,18 +31,18 @@
 html[data-theme="dark"] {
   --primary: #8694ff;
   --primaryStrong: #9ba8ff;
-  --labelStrong: #f3f6fb;
-  --labelNormal: #ebeff7;
-  --labelAlternative: #c2cbda;
-  --labelAssistive: #99a5b6;
-  --fillNormal: #1c2430;
-  --fillStrong: #263140;
-  --fillAlternative: #18202b;
-  --lineNormal: rgba(232, 238, 249, 0.18);
-  --lineSolid: rgba(232, 238, 249, 0.14);
-  --bgNormal: #121821;
-  --bgAlternative: #080b10;
-  --bgElevated: #171f2a;
+  --labelStrong: #f5f7fb;
+  --labelNormal: #eef2f7;
+  --labelAlternative: #c6ced8;
+  --labelAssistive: #a7b2bf;
+  --fillNormal: #202730;
+  --fillStrong: #2b3540;
+  --fillAlternative: #1a2129;
+  --lineNormal: rgba(255, 255, 255, 0.18);
+  --lineSolid: rgba(255, 255, 255, 0.14);
+  --bgNormal: #14191f;
+  --bgAlternative: #0b0e12;
+  --bgElevated: #181e25;
   --dimmer: rgba(4, 8, 14, 0.68);
   --positive: #4ade80;
   --cautionary: #fbbf24;
@@ -116,7 +116,13 @@ html[data-theme="dark"] {
   }
 
   html[data-theme="dark"] body {
-    background: linear-gradient(180deg, #080b10 0%, #0d1117 100%);
+    background:
+      radial-gradient(
+        circle at top,
+        rgba(255, 255, 255, 0.035),
+        transparent 24%
+      ),
+      linear-gradient(180deg, #0b0e12 0%, #11161c 100%);
   }
 
   a {
@@ -232,10 +238,12 @@ html[data-theme="dark"] {
 
   html[data-theme="dark"] .surface-soft {
     background:
-      linear-gradient(180deg, rgba(23, 31, 42, 0.98), rgba(18, 24, 33, 0.96)),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0));
-    border-color: rgba(232, 238, 249, 0.12);
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+      linear-gradient(180deg, rgba(29, 36, 44, 0.98), rgba(21, 27, 33, 0.96)),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 18px 36px rgba(0, 0, 0, 0.28);
   }
 
   .card-surface {
@@ -243,9 +251,11 @@ html[data-theme="dark"] {
   }
 
   html[data-theme="dark"] .card-surface {
-    background: linear-gradient(180deg, rgba(22, 29, 39, 0.98), rgba(18, 24, 33, 0.98));
-    border-color: rgba(232, 238, 249, 0.12);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+    background: linear-gradient(180deg, rgba(25, 31, 38, 0.98), rgba(20, 25, 31, 0.98));
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.025),
+      0 14px 30px rgba(0, 0, 0, 0.24);
   }
 
   .field-surface {
@@ -253,9 +263,11 @@ html[data-theme="dark"] {
   }
 
   html[data-theme="dark"] .field-surface {
-    background: linear-gradient(180deg, rgba(24, 32, 43, 0.96), rgba(20, 27, 37, 0.96));
-    border-color: rgba(232, 238, 249, 0.16);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    background: linear-gradient(180deg, rgba(28, 34, 42, 0.96), rgba(23, 29, 36, 0.96));
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.035),
+      0 1px 0 rgba(0, 0, 0, 0.16);
   }
 
   .chrome-surface {
@@ -263,9 +275,23 @@ html[data-theme="dark"] {
   }
 
   html[data-theme="dark"] .chrome-surface {
-    background: rgba(16, 22, 30, 0.92);
-    border-color: rgba(232, 238, 249, 0.12);
-    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+    background: rgba(24, 30, 37, 0.96);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.025),
+      0 16px 32px rgba(0, 0, 0, 0.28);
+  }
+
+  .floating-readability-shadow {
+    box-shadow:
+      0 10px 18px rgba(17, 19, 24, 0.08),
+      0 16px 28px rgba(17, 19, 24, 0.08);
+  }
+
+  html[data-theme="dark"] .floating-readability-shadow {
+    box-shadow:
+      0 12px 20px rgba(0, 0, 0, 0.22),
+      0 0 18px rgba(148, 163, 184, 0.14);
   }
 
   .mobile-safe-bottom {
@@ -328,6 +354,18 @@ html.theme-transitioning *,
 
 html[data-theme="dark"] .bg-fill-alternative {
   background-color: var(--fillAlternative);
+}
+
+html[data-theme="dark"] .shadow-xs {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+}
+
+html[data-theme="dark"] .shadow-sm {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.34);
 }
 
 html[data-theme="dark"] .bg-fill-normal {

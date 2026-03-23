@@ -73,7 +73,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <button
       aria-label="다크모드와 라이트모드 전환"
       className={cn(
-        "chrome-surface inline-flex h-9 items-center gap-2 rounded-full border border-line-solid bg-bg-normal/90 px-3 text-label-strong shadow-xs transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "chrome-surface inline-flex h-9 items-center gap-2 rounded-full border border-line-solid px-3 text-label-strong shadow-xs transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         "md:hover:-translate-y-px md:hover:bg-fill-alternative",
         className,
       )}

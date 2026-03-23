@@ -87,7 +87,7 @@ export function TopBar({
               className={cn(
                 "max-w-[180px] sm:max-w-[220px]",
                 isFloatingMobile &&
-                  "pointer-events-auto shadow-sm md:hover:bg-fill-alternative",
+                  "pointer-events-auto floating-readability-shadow md:hover:bg-fill-alternative",
               )}
               href={profileHref}
               user={currentUser}
@@ -100,14 +100,14 @@ export function TopBar({
             className={cn(
               "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]",
               isFloatingMobile &&
-                "pointer-events-auto chrome-surface border-line-solid shadow-sm",
+                "pointer-events-auto chrome-surface floating-readability-shadow border-line-solid",
             )}
           >
             <ThemeToggle
               className={cn(
                 "rounded-full",
                 isFloatingMobile &&
-                  "border-line-solid/90 bg-bg-normal/92 shadow-xs md:hover:bg-fill-alternative",
+                  "border-line-solid/90 shadow-xs md:hover:bg-fill-alternative",
               )}
             />
             {isOwner ? (
@@ -118,7 +118,7 @@ export function TopBar({
                   className: cn(
                     "rounded-full px-3",
                     isFloatingMobile &&
-                      "h-9 border-line-solid/90 bg-bg-normal/92 px-3 shadow-xs md:hover:bg-fill-alternative",
+                      "h-9 border-line-solid/90 px-3 shadow-xs md:hover:bg-fill-alternative",
                   ),
                 })}
                 href={`/group/${groupId}/settings`}

@@ -2,12 +2,12 @@ import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 const toneMap = {
-  neutral: "bg-fill-normal text-label-alternative",
-  positive: "bg-positive/12 text-positive",
-  cautionary: "bg-cautionary/12 text-cautionary",
-  negative: "bg-negative/12 text-negative",
-  primary: "bg-primary/12 text-primary",
-  violet: "bg-accent-violet/12 text-accent-violet",
+  neutral: "border border-line-solid bg-fill-normal text-label-normal",
+  positive: "border border-positive/18 bg-positive/12 text-positive",
+  cautionary: "border border-cautionary/18 bg-cautionary/12 text-cautionary",
+  negative: "border border-negative/18 bg-negative/12 text-negative",
+  primary: "border border-primary/18 bg-primary/12 text-primary",
+  violet: "border border-accent-violet/18 bg-accent-violet/12 text-accent-violet",
 };
 
 export interface ChipProps extends HTMLAttributes<HTMLSpanElement> {

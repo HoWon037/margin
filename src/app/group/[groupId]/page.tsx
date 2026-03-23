@@ -99,15 +99,15 @@ export default async function GroupHomePage({
       <Card elevated className="surface-soft space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <div
-            className={`inline-flex h-9 items-center rounded-[14px] px-3 text-[12px] font-medium sm:h-10 sm:px-3.5 sm:text-[13px] ${
+            className={`inline-flex h-9 items-center rounded-[14px] border px-3 text-[12px] font-medium sm:h-10 sm:px-3.5 sm:text-[13px] ${
               workspace.hasLoggedToday
-                ? "bg-positive/12 text-positive"
-                : "bg-cautionary/12 text-cautionary"
+                ? "border-positive/18 bg-positive/12 text-positive"
+                : "border-cautionary/18 bg-cautionary/12 text-cautionary"
             }`}
           >
             {workspace.hasLoggedToday ? "오늘 기록함" : "기록 대기"}
           </div>
-          <div className="inline-flex h-9 items-center rounded-[14px] bg-fill-alternative px-3 text-[12px] font-medium text-label-strong tabular-nums sm:h-10 sm:px-3.5 sm:text-[13px]">
+          <div className="inline-flex h-9 items-center rounded-[14px] border border-line-solid bg-fill-alternative px-3 text-[12px] font-medium text-label-strong tabular-nums sm:h-10 sm:px-3.5 sm:text-[13px]">
             이번 주 기록: {workspace.personalSummary.daysReadThisWeek}일/
             {workspace.personalSummary.pagesThisWeek}페이지
           </div>

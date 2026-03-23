@@ -15,7 +15,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "card-surface rounded-[20px] border border-line-solid/90 bg-bg-normal p-5 shadow-xs sm:p-6",
+        "card-surface rounded-[20px] border border-line-solid/90 p-5 shadow-xs sm:p-6",
         elevated && "bg-bg-elevated shadow-sm",
         interactive &&
           "transition md:hover:border-line-normal md:hover:shadow-sm",

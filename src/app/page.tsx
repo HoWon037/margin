@@ -26,7 +26,10 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-5">
       <div className="entry-ambient pointer-events-none absolute inset-x-0 top-0 h-72" />
       <div className="w-full max-w-[460px]">
-        <Card elevated className="surface-soft relative overflow-hidden rounded-[28px] border-white/80 p-6 sm:p-8">
+        <Card
+          elevated
+          className="surface-soft relative overflow-hidden rounded-[28px] border-line-solid/90 p-6 sm:p-8"
+        >
           <div className="entry-card-sheen pointer-events-none absolute inset-x-0 top-0 h-28" />
           <div className="relative space-y-6">
             <div className="flex items-center gap-4">
@@ -46,7 +49,7 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
 
             <EntryAuthForm />
 
-            <div className="flex items-center justify-between gap-3 rounded-[18px] border border-line-solid bg-bg-normal/85 px-4 py-4">
+            <div className="chrome-surface flex items-center justify-between gap-3 rounded-[18px] border border-line-solid px-4 py-4">
               <p className="type-label text-label-strong">데모 모임</p>
               <Link
                 className={buttonStyles({ size: "sm", variant: "secondary" })}

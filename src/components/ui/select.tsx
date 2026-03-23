@@ -29,7 +29,7 @@ export function Select({
         aria-describedby={helperId}
         aria-invalid={error ? true : undefined}
         className={cn(
-          "field-surface h-12 rounded-lg border border-line-solid bg-bg-normal px-4 text-label-normal outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10",
+          "field-surface h-12 rounded-lg border border-line-solid px-4 text-label-normal outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15",
           error && "border-negative focus:border-negative focus:ring-negative/10",
           className,
         )}
