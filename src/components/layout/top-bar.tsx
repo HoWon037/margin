@@ -72,24 +72,16 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,padding] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
+        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
         isFloatingMobile
           ? "pointer-events-none border-transparent bg-transparent shadow-none"
           : "",
       )}
     >
       <div
-        className={cn(
-          "relative z-10 mx-auto max-w-[1440px] px-4 pt-4 transition-[padding,transform] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] sm:px-5",
-          isFloatingMobile && "pt-3",
-        )}
+        className="relative z-10 mx-auto max-w-[1440px] px-4 pt-4 sm:px-5"
       >
-        <div
-          className={cn(
-            "flex items-center justify-between gap-4 pb-3 transition-[padding,transform,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]",
-            isFloatingMobile && "translate-y-0.5 pb-1",
-          )}
-        >
+        <div className="flex items-center justify-between gap-4 pb-3">
           <div className="flex min-w-0 items-center gap-3 rounded-full border border-transparent px-0 py-0 transform-gpu transition-[padding,border-color,background-color,box-shadow,transform,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]">
             <ProfileLink
               className={cn(
