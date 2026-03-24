@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { ReadingDaysStrip } from "@/components/domain/reading-days-strip";
 import { Avatar } from "@/components/ui/avatar";
@@ -11,14 +10,12 @@ interface MemberCardProps {
   groupId: string;
   member: MemberSummary;
   selected?: boolean;
-  expandedContent?: ReactNode;
 }
 
 export function MemberCard({
   groupId,
   member,
   selected = false,
-  expandedContent,
 }: MemberCardProps) {
   return (
     <Card
@@ -33,7 +30,12 @@ export function MemberCard({
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <Avatar name={member.nickname} size="sm" tone={member.avatarColor} />
+              <Avatar
+                avatarUrl={member.avatarUrl}
+                name={member.nickname}
+                size="sm"
+                tone={member.avatarColor}
+              />
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
                   <p
@@ -64,12 +66,6 @@ export function MemberCard({
           />
         </div>
       </Link>
-
-      {selected && expandedContent ? (
-        <div className="expand-reveal px-4 py-4 sm:hidden">
-          {expandedContent}
-        </div>
-      ) : null}
     </Card>
   );
 }

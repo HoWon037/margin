@@ -9,11 +9,17 @@ export const AVATAR_SWATCHES: Array<{
   label: string;
   description: string;
 }> = [
-  { value: "violet", label: "보라", description: "차분한 보라" },
-  { value: "lightBlue", label: "하늘", description: "맑은 하늘색" },
-  { value: "green", label: "초록", description: "잔잔한 초록" },
-  { value: "amber", label: "호박", description: "따뜻한 호박색" },
   { value: "slate", label: "회색", description: "절제된 회색" },
+  { value: "violet", label: "보라", description: "차분한 보라" },
+  { value: "indigo", label: "남보라", description: "짙은 남보라" },
+  { value: "blue", label: "파랑", description: "선명한 파랑" },
+  { value: "lightBlue", label: "하늘", description: "맑은 하늘색" },
+  { value: "teal", label: "청록", description: "차분한 청록" },
+  { value: "green", label: "초록", description: "잔잔한 초록" },
+  { value: "lime", label: "연두", description: "맑은 연두" },
+  { value: "amber", label: "호박", description: "따뜻한 호박색" },
+  { value: "coral", label: "코랄", description: "부드러운 코랄" },
+  { value: "rose", label: "로즈", description: "차분한 로즈" },
 ];
 
 export const MOOD_TAGS = [
@@ -44,8 +50,8 @@ export const BOOK_STATUS_OPTIONS: Array<{
 export function getGroupNavigation(groupId: string) {
   return [
     { label: "피드", href: `/group/${groupId}` },
-    { label: "멤버", href: `/group/${groupId}/members` },
     { label: "책", href: `/group/${groupId}/books` },
-    { label: "이번 주", href: `/group/${groupId}/weekly` },
+    { label: "멤버", href: `/group/${groupId}/members` },
+    { label: "기록", href: `/group/${groupId}/weekly` },
   ];
 }

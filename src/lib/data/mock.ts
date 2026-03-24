@@ -27,6 +27,7 @@ function makeUser(
     nickname,
     email,
     avatarColor,
+    avatarUrl: null,
     createdAt: buildDate(90).toISOString(),
   };
 }
@@ -67,14 +68,14 @@ export function createMockDataset(groupId = DEMO_GROUP_ID): SourceDataset {
   const users: SourceUser[] = [
     makeUser("user-mina", "민아", "mina@margin.club", "violet"),
     makeUser("user-daniel", "다니엘", "daniel@margin.club", "lightBlue"),
-    makeUser("user-hana", "하나", "hana@margin.club", "green"),
+    makeUser("user-hana", "하나", "hana@margin.club", "teal"),
     makeUser("user-theo", "태오", "theo@margin.club", "amber"),
     makeUser("user-aki", "아키", "aki@margin.club", "slate"),
-    makeUser("user-jisoo", "지수", "jisoo@margin.club", "violet"),
-    makeUser("user-erin", "에린", "erin@margin.club", "lightBlue"),
-    makeUser("user-noel", "노엘", "noel@margin.club", "green"),
-    makeUser("user-yuna", "유나", "yuna@margin.club", "amber"),
-    makeUser("user-leo", "레오", "leo@margin.club", "slate"),
+    makeUser("user-jisoo", "지수", "jisoo@margin.club", "rose"),
+    makeUser("user-erin", "에린", "erin@margin.club", "indigo"),
+    makeUser("user-noel", "노엘", "noel@margin.club", "lime"),
+    makeUser("user-yuna", "유나", "yuna@margin.club", "coral"),
+    makeUser("user-leo", "레오", "leo@margin.club", "blue"),
   ];
 
   const group: SourceGroup = {

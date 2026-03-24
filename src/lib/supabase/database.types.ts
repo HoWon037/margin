@@ -7,7 +7,19 @@ export interface Database {
           email: string;
           login_id: string;
           nickname: string;
-          avatar_color: "violet" | "lightBlue" | "green" | "amber" | "slate";
+          avatar_url: string | null;
+          avatar_color:
+            | "violet"
+            | "indigo"
+            | "blue"
+            | "lightBlue"
+            | "teal"
+            | "green"
+            | "lime"
+            | "amber"
+            | "coral"
+            | "rose"
+            | "slate";
           created_at: string;
         };
         Insert: {
@@ -15,14 +27,38 @@ export interface Database {
           email: string;
           login_id: string;
           nickname: string;
-          avatar_color?: "violet" | "lightBlue" | "green" | "amber" | "slate";
+          avatar_url?: string | null;
+          avatar_color?:
+            | "violet"
+            | "indigo"
+            | "blue"
+            | "lightBlue"
+            | "teal"
+            | "green"
+            | "lime"
+            | "amber"
+            | "coral"
+            | "rose"
+            | "slate";
           created_at?: string;
         };
         Update: {
           email?: string;
           login_id?: string;
           nickname?: string;
-          avatar_color?: "violet" | "lightBlue" | "green" | "amber" | "slate";
+          avatar_url?: string | null;
+          avatar_color?:
+            | "violet"
+            | "indigo"
+            | "blue"
+            | "lightBlue"
+            | "teal"
+            | "green"
+            | "lime"
+            | "amber"
+            | "coral"
+            | "rose"
+            | "slate";
         };
         Relationships: [];
       };

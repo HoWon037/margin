@@ -2,9 +2,15 @@ import { z } from "zod";
 
 const avatarColorSchema = z.enum([
   "violet",
+  "indigo",
+  "blue",
   "lightBlue",
+  "teal",
   "green",
+  "lime",
   "amber",
+  "coral",
+  "rose",
   "slate",
 ]);
 
@@ -12,14 +18,12 @@ const loginIdSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .min(4, "아이디는 4자 이상 입력해 주세요.")
-  .max(20, "아이디는 20자 이하로 입력해 주세요.")
+  .min(1, "아이디를 입력해 주세요.")
   .regex(/^[a-z0-9][a-z0-9._-]*$/, "아이디는 영문 소문자, 숫자, ., -, _만 사용할 수 있습니다.");
 
 const passwordSchema = z
   .string()
-  .min(8, "비밀번호는 8자 이상 입력해 주세요.")
-  .max(72, "비밀번호는 72자 이하로 입력해 주세요.");
+  .min(1, "비밀번호를 입력해 주세요.");
 
 const optionalPageSchema = z.preprocess(
   (value) => {
@@ -48,8 +52,8 @@ export const passwordSignUpSchema = z.object({
   nickname: z
     .string()
     .trim()
-    .min(2, "이름은 2자 이상 입력해 주세요.")
-    .max(24, "이름은 24자 이하로 입력해 주세요."),
+    .min(2, "닉네임은 2자 이상 입력해 주세요.")
+    .max(24, "닉네임은 24자 이하로 입력해 주세요."),
   avatarColor: avatarColorSchema.default("slate"),
 });
 
@@ -79,21 +83,14 @@ export const joinGroupSchema = z.object({
     .trim()
     .min(4, "초대 코드는 4자 이상이어야 합니다.")
     .max(16, "초대 코드는 16자 이하로 입력해 주세요."),
-  nickname: z
-    .string()
-    .trim()
-    .min(2, "닉네임은 2자 이상 입력해 주세요.")
-    .max(24, "닉네임은 24자 이하로 입력해 주세요."),
-  avatarColor: avatarColorSchema,
 });
 
 export const profileSchema = z.object({
   nickname: z
     .string()
     .trim()
-    .min(2, "이름은 2자 이상 입력해 주세요.")
-    .max(24, "이름은 24자 이하로 입력해 주세요."),
-  avatarColor: avatarColorSchema,
+    .min(2, "닉네임은 2자 이상 입력해 주세요.")
+    .max(24, "닉네임은 24자 이하로 입력해 주세요."),
 });
 
 export const bookSchema = z.object({
@@ -145,6 +142,10 @@ export const settingsSchema = z.object({
 export const readingLogSchema = z
   .object({
     groupId: z.string().trim().min(1),
+    date: z
+      .string()
+      .trim()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않습니다."),
     bookId: z.string().trim().min(1, "읽은 책을 선택해 주세요."),
     pagesRead: z.coerce
       .number()

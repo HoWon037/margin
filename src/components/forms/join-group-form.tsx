@@ -2,14 +2,12 @@
 
 import { useActionState } from "react";
 import { joinGroupAction } from "@/app/actions";
-import { AVATAR_SWATCHES } from "@/lib/constants";
 import { initialFormState } from "@/lib/form-state";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { TextField } from "@/components/ui/text-field";
 import { Toast } from "@/components/ui/toast";
 
-export function JoinGroupForm({ defaultCode }: { defaultCode?: string }) {
+export function JoinGroupForm() {
   const [state, formAction, pending] = useActionState(
     joinGroupAction,
     initialFormState,
@@ -19,33 +17,13 @@ export function JoinGroupForm({ defaultCode }: { defaultCode?: string }) {
     <form action={formAction} className="space-y-5">
       <TextField
         autoCapitalize="characters"
-        defaultValue={defaultCode}
+        autoCorrect="off"
         error={state.fieldErrors?.inviteCode?.[0]}
         label="초대 코드"
         name="inviteCode"
-        placeholder="MARGIN7"
         required
         spellCheck={false}
       />
-      <TextField
-        error={state.fieldErrors?.nickname?.[0]}
-        label="이름"
-        name="nickname"
-        placeholder="이름"
-        required
-      />
-      <Select
-        defaultValue="violet"
-        error={state.fieldErrors?.avatarColor?.[0]}
-        label="아바타 색상"
-        name="avatarColor"
-      >
-        {AVATAR_SWATCHES.map((swatch) => (
-          <option key={swatch.value} value={swatch.value}>
-            {swatch.label}
-          </option>
-        ))}
-      </Select>
       {state.message ? (
         <Toast
           title={state.message}
@@ -53,7 +31,7 @@ export function JoinGroupForm({ defaultCode }: { defaultCode?: string }) {
         />
       ) : null}
       <Button block disabled={pending} size="lg" type="submit">
-        {pending ? "참여하는 중..." : "모임 참여하기"}
+        {pending ? "들어가는 중..." : "모임 들어가기"}
       </Button>
     </form>
   );

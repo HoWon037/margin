@@ -5,8 +5,9 @@ create table if not exists public.users (
   email text not null unique,
   login_id text not null unique,
   nickname text not null,
+  avatar_url text,
   avatar_color text not null default 'slate' check (
-    avatar_color in ('violet', 'lightBlue', 'green', 'amber', 'slate')
+    avatar_color in ('violet', 'indigo', 'blue', 'lightBlue', 'teal', 'green', 'lime', 'amber', 'coral', 'rose', 'slate')
   ),
   created_at timestamptz not null default now()
 );
@@ -14,8 +15,20 @@ create table if not exists public.users (
 alter table public.users
   add column if not exists login_id text;
 
+alter table public.users
+  add column if not exists avatar_url text;
+
 create unique index if not exists users_login_id_key
 on public.users (login_id);
+
+alter table public.users
+  drop constraint if exists users_avatar_color_check;
+
+alter table public.users
+  add constraint users_avatar_color_check
+  check (
+    avatar_color in ('violet', 'indigo', 'blue', 'lightBlue', 'teal', 'green', 'lime', 'amber', 'coral', 'rose', 'slate')
+  );
 
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
@@ -84,6 +97,24 @@ alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
 alter table public.books enable row level security;
 alter table public.reading_logs enable row level security;
+
+drop policy if exists "users_select_shared_profiles" on public.users;
+drop policy if exists "users_insert_own_profile" on public.users;
+drop policy if exists "users_update_own_profile" on public.users;
+drop policy if exists "groups_select_member_groups" on public.groups;
+drop policy if exists "groups_insert_owner" on public.groups;
+drop policy if exists "groups_update_owner" on public.groups;
+drop policy if exists "groups_delete_owner" on public.groups;
+drop policy if exists "group_members_select_members" on public.group_members;
+drop policy if exists "group_members_insert_self" on public.group_members;
+drop policy if exists "group_members_delete_owner_or_self" on public.group_members;
+drop policy if exists "books_select_group_members" on public.books;
+drop policy if exists "books_insert_group_members" on public.books;
+drop policy if exists "books_update_owner_or_creator" on public.books;
+drop policy if exists "reading_logs_select_group_members" on public.reading_logs;
+drop policy if exists "reading_logs_insert_self" on public.reading_logs;
+drop policy if exists "reading_logs_update_self" on public.reading_logs;
+drop policy if exists "reading_logs_delete_self_or_owner" on public.reading_logs;
 
 create policy "users_select_shared_profiles"
 on public.users

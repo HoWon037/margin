@@ -20,7 +20,11 @@ export function ReadingLogCard({ log }: ReadingLogCardProps) {
     <Card interactive className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <Avatar name={log.member.nickname} tone={log.member.avatarColor} />
+          <Avatar
+            avatarUrl={log.member.avatarUrl}
+            name={log.member.nickname}
+            tone={log.member.avatarColor}
+          />
           <div className="min-w-0 space-y-1">
             <p className="truncate type-label text-label-strong">
               {log.member.nickname}

@@ -22,7 +22,12 @@ export function ProfileLink({
       )}
       href={href}
     >
-      <Avatar name={user.nickname} size="sm" tone={user.avatarColor} />
+      <Avatar
+        avatarUrl={user.avatarUrl}
+        name={user.nickname}
+        size="sm"
+        tone={user.avatarColor}
+      />
       <div className="min-w-0">
         <p className="truncate type-label text-label-strong">{user.nickname}</p>
       </div>

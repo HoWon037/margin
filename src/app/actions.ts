@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getTodayKey } from "@/lib/date";
+import { parseDateKey } from "@/lib/date";
 import { MAX_ACTIVE_READING_BOOKS } from "@/lib/constants";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AvatarTone, FormState } from "@/lib/types";
@@ -116,6 +117,25 @@ async function getGroupOwnerId(
   return owner?.owner_id ?? null;
 }
 
+async function isGroupMember(
+  supabase: AuthContext["supabase"],
+  groupId: string,
+  userId: string,
+) {
+  const membershipCheck = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (membershipCheck.error) {
+    return null;
+  }
+
+  return Boolean(membershipCheck.data);
+}
+
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
 
@@ -139,6 +159,7 @@ async function upsertProfile(
     loginId?: string;
     nickname?: string;
     avatarColor?: AvatarTone;
+    avatarUrl?: string | null;
   },
 ) {
   const context = await requireUser();
@@ -149,13 +170,13 @@ async function upsertProfile(
 
   const profileQuery = await context.supabase
     .from("users")
-    .select("login_id, nickname, avatar_color")
+    .select("login_id, nickname, avatar_color, avatar_url")
     .eq("id", context.user.id)
     .maybeSingle();
 
   const existingProfile = profileQuery.data as Pick<
     Database["public"]["Tables"]["users"]["Row"],
-    "login_id" | "nickname" | "avatar_color"
+    "login_id" | "nickname" | "avatar_color" | "avatar_url"
   > | null;
 
   const loginId =
@@ -183,6 +204,10 @@ async function upsertProfile(
       : undefined) ??
     existingProfile?.avatar_color ??
     "slate";
+  const fallbackAvatarUrl =
+    overrides?.avatarUrl !== undefined
+      ? overrides.avatarUrl ?? null
+      : existingProfile?.avatar_url ?? null;
 
   await context.supabase.from("users").upsert(
     {
@@ -190,6 +215,7 @@ async function upsertProfile(
       email: context.user.email ?? createAuthEmail(loginId),
       login_id: normalizeLoginId(loginId),
       nickname: fallbackNickname,
+      avatar_url: fallbackAvatarUrl,
       avatar_color: fallbackAvatarColor,
     },
     { onConflict: "id" },
@@ -229,6 +255,36 @@ function normalizeLoginId(loginId: string) {
 
 function createAuthEmail(loginId: string) {
   return `${normalizeLoginId(loginId)}@${AUTH_EMAIL_DOMAIN}`;
+}
+
+async function parseAvatarUpload(formData: FormData) {
+  const removeAvatar = formData.get("removeAvatar") === "true";
+  const avatarFile = formData.get("avatarFile");
+
+  if (!(avatarFile instanceof File) || avatarFile.size === 0) {
+    return {
+      avatarUrl: removeAvatar ? null : undefined,
+    };
+  }
+
+  if (!avatarFile.type.startsWith("image/")) {
+    return {
+      error: "프로필 사진은 이미지 파일만 올릴 수 있습니다.",
+    };
+  }
+
+  if (avatarFile.size > 2 * 1024 * 1024) {
+    return {
+      error: "프로필 사진은 2MB 이하로 올려 주세요.",
+    };
+  }
+
+  const arrayBuffer = await avatarFile.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  return {
+    avatarUrl: `data:${avatarFile.type};base64,${base64}`,
+  };
 }
 
 function mapAuthErrorToMessage(message?: string) {
@@ -293,7 +349,7 @@ export async function signInWithPasswordAction(
 
   await upsertProfile({ loginId: parsed.data.loginId });
 
-  redirectWithToast("/groups", "로그인했습니다", "positive");
+  redirect("/groups");
 }
 
 export async function signUpWithPasswordAction(
@@ -301,6 +357,7 @@ export async function signUpWithPasswordAction(
   formData: FormData,
 ) {
   const supabase = await createSupabaseServerClient();
+  const adminSupabase = createSupabaseAdminClient();
   const parsed = passwordSignUpSchema.safeParse({
     loginId: formData.get("loginId"),
     password: formData.get("password"),
@@ -316,6 +373,12 @@ export async function signUpWithPasswordAction(
     );
   }
 
+  const avatarUpload = await parseAvatarUpload(formData);
+
+  if (avatarUpload.error) {
+    return buildFormState("error", avatarUpload.error);
+  }
+
   if (!supabase) {
     return buildFormState(
       "error",
@@ -323,33 +386,63 @@ export async function signUpWithPasswordAction(
     );
   }
 
-  const { data, error } = await supabase.auth.signUp({
-    email: createAuthEmail(parsed.data.loginId),
-    password: parsed.data.password,
-    options: {
-      data: {
-        loginId: normalizeLoginId(parsed.data.loginId),
+  const normalizedLoginId = normalizeLoginId(parsed.data.loginId);
+  const authEmail = createAuthEmail(parsed.data.loginId);
+
+  if (adminSupabase) {
+    const { error } = await adminSupabase.auth.admin.createUser({
+      email: authEmail,
+      password: parsed.data.password,
+      email_confirm: true,
+      user_metadata: {
+        loginId: normalizedLoginId,
         nickname: parsed.data.nickname,
         avatarColor: parsed.data.avatarColor,
       },
-    },
-  });
+    });
 
-  if (error) {
-    return buildFormState("error", mapAuthErrorToMessage(error.message));
+    if (error) {
+      return buildFormState("error", mapAuthErrorToMessage(error.message));
+    }
+  } else {
+    const { data, error } = await supabase.auth.signUp({
+      email: authEmail,
+      password: parsed.data.password,
+      options: {
+        data: {
+          loginId: normalizedLoginId,
+          nickname: parsed.data.nickname,
+          avatarColor: parsed.data.avatarColor,
+        },
+      },
+    });
+
+    if (error) {
+      return buildFormState("error", mapAuthErrorToMessage(error.message));
+    }
+
+    if (!data.session) {
+      return buildFormState(
+        "error",
+        "서버 비밀 키를 연결하거나 Supabase에서 이메일 확인을 꺼야 바로 가입할 수 있습니다.",
+      );
+    }
   }
 
-  if (!data.session) {
-    return buildFormState(
-      "error",
-      "Supabase에서 이메일 확인이 켜져 있으면 이 로그인 방식은 쓸 수 없습니다. 이메일 확인을 꺼 주세요.",
-    );
+  const signInResult = await supabase.auth.signInWithPassword({
+    email: authEmail,
+    password: parsed.data.password,
+  });
+
+  if (signInResult.error) {
+    return buildFormState("error", mapAuthErrorToMessage(signInResult.error.message));
   }
 
   await upsertProfile({
     loginId: parsed.data.loginId,
     nickname: parsed.data.nickname,
     avatarColor: parsed.data.avatarColor,
+    avatarUrl: avatarUpload.avatarUrl,
   });
 
   redirectWithToast("/groups", "가입이 완료되었습니다", "positive");
@@ -364,7 +457,7 @@ export async function signOutAction() {
 
   await supabase.auth.signOut();
 
-  redirectWithToast("/", "로그아웃되었습니다", "positive");
+  redirect("/");
 }
 
 export async function updateProfileAction(
@@ -373,7 +466,6 @@ export async function updateProfileAction(
 ) {
   const parsed = profileSchema.safeParse({
     nickname: formData.get("nickname"),
-    avatarColor: formData.get("avatarColor"),
   });
 
   if (!parsed.success) {
@@ -384,9 +476,15 @@ export async function updateProfileAction(
     );
   }
 
+  const avatarUpload = await parseAvatarUpload(formData);
+
+  if (avatarUpload.error) {
+    return buildFormState("error", avatarUpload.error);
+  }
+
   const context = await upsertProfile({
     nickname: parsed.data.nickname,
-    avatarColor: parsed.data.avatarColor,
+    avatarUrl: avatarUpload.avatarUrl,
   });
 
   if (!context) {
@@ -397,7 +495,6 @@ export async function updateProfileAction(
     data: {
       ...context.user.user_metadata,
       nickname: parsed.data.nickname,
-      avatarColor: parsed.data.avatarColor,
     },
   });
 
@@ -408,9 +505,34 @@ export async function updateProfileAction(
     );
   }
 
+  const membershipsQuery = await context.supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", context.user.id);
+
+  const membershipGroupIds = [
+    ...new Set(
+      ((membershipsQuery.data ?? []) as Array<{ group_id: string }>).map(
+        (membership) => membership.group_id,
+      ),
+    ),
+  ];
+
+  revalidatePath("/");
   revalidatePath("/groups");
   revalidatePath("/profile");
-  revalidatePath("/group/[groupId]", "layout");
+
+  for (const groupId of membershipGroupIds) {
+    revalidateGroupRoutes(groupId, {
+      includeBooks: true,
+      includeLog: true,
+      includeMembers: true,
+      includeSettings: true,
+      includeWeekly: true,
+    });
+  }
+
+  refresh();
 
   return buildFormState("success", "프로필을 저장했습니다.");
 }
@@ -436,21 +558,30 @@ export async function createGroupAction(
     redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
-  const inviteCode = generateInviteCode();
-  const groupInsert = await context.supabase
-    .from("groups")
-    .insert({
-      name: parsed.data.groupName,
-      description: parsed.data.description || null,
-      weekly_goal_type: parsed.data.weeklyGoalType,
-      weekly_goal_value: parsed.data.weeklyGoalValue,
-      invite_code: inviteCode,
-      owner_id: context.user.id,
-    })
-    .select("id")
-    .single();
+  let groupInsert = null;
 
-  if (groupInsert.error || !groupInsert.data) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const inviteCode = generateInviteCode();
+    const insertResult = await context.supabase
+      .from("groups")
+      .insert({
+        name: parsed.data.groupName,
+        description: parsed.data.description || null,
+        weekly_goal_type: parsed.data.weeklyGoalType,
+        weekly_goal_value: parsed.data.weeklyGoalValue,
+        invite_code: inviteCode,
+        owner_id: context.user.id,
+      })
+      .select("id")
+      .single();
+
+    if (!insertResult.error || insertResult.error.code !== "23505") {
+      groupInsert = insertResult;
+      break;
+    }
+  }
+
+  if (!groupInsert || groupInsert.error || !groupInsert.data) {
     return buildFormState("error", "모임을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 
@@ -479,18 +610,13 @@ export async function joinGroupAction(
 ) {
   const parsed = joinGroupSchema.safeParse({
     inviteCode: formData.get("inviteCode"),
-    nickname: formData.get("nickname"),
-    avatarColor: formData.get("avatarColor"),
   });
 
   if (!parsed.success) {
     return buildFormState("error", "참여 정보를 다시 확인해 주세요.", parsed.error.flatten().fieldErrors);
   }
 
-  const context = await upsertProfile({
-    nickname: parsed.data.nickname,
-    avatarColor: parsed.data.avatarColor,
-  });
+  const context = await upsertProfile();
 
   if (!context) {
     redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
@@ -506,6 +632,13 @@ export async function joinGroupAction(
 
   const group = groupQuery.data as GroupRow | null;
 
+  if (groupQuery.error) {
+    return buildFormState(
+      "error",
+      "초대 코드를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
+
   if (!group) {
     return buildFormState("error", "초대 코드를 찾지 못했습니다.", {
       inviteCode: ["초대 코드를 찾지 못했습니다."],
@@ -516,6 +649,13 @@ export async function joinGroupAction(
     .from("group_members")
     .select("*", { count: "exact", head: true })
     .eq("group_id", group.id);
+
+  if (countQuery.error) {
+    return buildFormState(
+      "error",
+      "모임 인원을 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
 
   if ((countQuery.count ?? 0) >= 10) {
     return buildFormState("error", "이 모임은 인원이 가득 찼습니다.", {
@@ -529,6 +669,13 @@ export async function joinGroupAction(
     .eq("group_id", group.id)
     .eq("user_id", context.user.id)
     .maybeSingle();
+
+  if (existingQuery.error) {
+    return buildFormState(
+      "error",
+      "참여 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
 
   if (existingQuery.data) {
     redirectWithToast(
@@ -560,6 +707,7 @@ export async function saveReadingLogAction(
 ) {
   const parsed = readingLogSchema.safeParse({
     groupId: formData.get("groupId"),
+    date: formData.get("date"),
     bookId: formData.get("bookId"),
     pagesRead: formData.get("pagesRead"),
     memo: formData.get("memo"),
@@ -577,8 +725,22 @@ export async function saveReadingLogAction(
     redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
   }
 
-  const todayKey = getTodayKey();
-  const todayDate = new Date();
+  const logDate = parseDateKey(parsed.data.date);
+  const membership = await isGroupMember(
+    context.supabase,
+    parsed.data.groupId,
+    context.user.id,
+  );
+
+  if (membership !== true) {
+    return buildFormState(
+      "error",
+      membership === false
+        ? "이 모임에 참여한 사용자만 기록할 수 있습니다."
+        : "모임 참여 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
+
   const bookQuery = await context.supabase
     .from("books")
     .select("id, status, created_by")
@@ -609,8 +771,8 @@ export async function saveReadingLogAction(
       group_id: parsed.data.groupId,
       user_id: context.user.id,
       book_id: parsed.data.bookId,
-      date: todayKey,
-      day_of_week: todayDate.getDay(),
+      date: parsed.data.date,
+      day_of_week: logDate.getDay(),
       did_read: true,
       pages_read: parsed.data.pagesRead,
       memo: parsed.data.memo || null,
@@ -669,6 +831,20 @@ export async function createBookAction(
     parsed.data.groupId,
     context.user.id,
   );
+  const membership = await isGroupMember(
+    context.supabase,
+    parsed.data.groupId,
+    context.user.id,
+  );
+
+  if (membership !== true) {
+    return buildFormState(
+      "error",
+      membership === false
+        ? "이 모임에 참여한 사용자만 책을 추가할 수 있습니다."
+        : "모임 참여 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+  }
 
   if (activeReadingBookCount >= MAX_ACTIVE_READING_BOOKS) {
     return buildFormState(
@@ -719,6 +895,22 @@ export async function updateBookStatusAction(formData: FormData) {
 
   if (!context) {
     redirectWithToast("/", "먼저 로그인해 주세요", "cautionary");
+  }
+
+  const membership = await isGroupMember(
+    context.supabase,
+    parsed.data.groupId,
+    context.user.id,
+  );
+
+  if (membership !== true) {
+    redirectWithToast(
+      redirectTo || `/group/${parsed.data.groupId}/books`,
+      membership === false
+        ? "이 모임의 책만 바꿀 수 있습니다"
+        : "모임 참여 상태를 확인하지 못했습니다",
+      "negative",
+    );
   }
 
   const currentBook = await context.supabase

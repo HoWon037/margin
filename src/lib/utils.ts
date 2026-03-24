@@ -27,7 +27,10 @@ export function pluralize(value: number, noun: string) {
 }
 
 export function generateInviteCode() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+
+  return Array.from(bytes, (value) => alphabet[value % alphabet.length]).join("");
 }
 
 export function formatBookStatus(status: BookStatus) {

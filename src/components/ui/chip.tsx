@@ -22,7 +22,7 @@ export function Chip({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 type-caption",
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 type-caption",
         toneMap[tone],
         className,
       )}

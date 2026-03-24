@@ -8,6 +8,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Toast } from "@/components/ui/toast";
 import { getGroupWorkspace } from "@/lib/data/queries";
 import { getStringParam, readToast } from "@/lib/toast";
+import { formatPages } from "@/lib/utils";
 
 interface GroupHomePageProps {
   params: Promise<{ groupId: string }>;
@@ -59,6 +60,24 @@ function getPaginationPages(totalPages: number, currentPage: number) {
   ];
 }
 
+function formatWeeklyRecordSummary(
+  goalType: "days" | "pages",
+  goalValue: number,
+  daysReadThisWeek: number,
+  pagesThisWeek: number,
+  withGoal: boolean,
+) {
+  if (goalType === "days") {
+    return withGoal
+      ? `이번 주 기록: ${daysReadThisWeek}일/${goalValue}일 · ${formatPages(pagesThisWeek)}`
+      : `이번 주 기록: ${daysReadThisWeek}일 · ${formatPages(pagesThisWeek)}`;
+  }
+
+  return withGoal
+    ? `이번 주 기록: ${pagesThisWeek}/${goalValue}페이지`
+    : `이번 주 기록: ${formatPages(pagesThisWeek)}`;
+}
+
 export default async function GroupHomePage({
   params,
   searchParams,
@@ -85,6 +104,20 @@ export default async function GroupHomePage({
     (currentPage - 1) * LOGS_PER_PAGE,
     currentPage * LOGS_PER_PAGE,
   );
+  const mobileSummary = formatWeeklyRecordSummary(
+    workspace.group.weeklyGoalType,
+    workspace.group.weeklyGoalValue,
+    workspace.personalSummary.daysReadThisWeek,
+    workspace.personalSummary.pagesThisWeek,
+    true,
+  );
+  const desktopSummary = formatWeeklyRecordSummary(
+    workspace.group.weeklyGoalType,
+    workspace.group.weeklyGoalValue,
+    workspace.personalSummary.daysReadThisWeek,
+    workspace.personalSummary.pagesThisWeek,
+    false,
+  );
 
   return (
     <div className="space-y-5">
@@ -108,8 +141,8 @@ export default async function GroupHomePage({
             {workspace.hasLoggedToday ? "오늘 기록함" : "기록 대기"}
           </div>
           <div className="inline-flex h-9 items-center rounded-[14px] border border-line-solid bg-fill-alternative px-3 text-[12px] font-medium text-label-strong tabular-nums sm:h-10 sm:px-3.5 sm:text-[13px]">
-            이번 주 기록: {workspace.personalSummary.daysReadThisWeek}일/
-            {workspace.personalSummary.pagesThisWeek}페이지
+            <span className="md:hidden">{mobileSummary}</span>
+            <span className="hidden md:inline">{desktopSummary}</span>
           </div>
         </div>
 

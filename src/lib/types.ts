@@ -1,7 +1,18 @@
 export type GoalType = "days" | "pages";
 export type MemberRole = "owner" | "member";
 export type BookStatus = "reading" | "finished";
-export type AvatarTone = "violet" | "lightBlue" | "green" | "amber" | "slate";
+export type AvatarTone =
+  | "violet"
+  | "indigo"
+  | "blue"
+  | "lightBlue"
+  | "teal"
+  | "green"
+  | "lime"
+  | "amber"
+  | "coral"
+  | "rose"
+  | "slate";
 export type ToastTone = "primary" | "positive" | "cautionary" | "negative";
 
 export interface SourceUser {
@@ -9,6 +20,7 @@ export interface SourceUser {
   email: string;
   nickname: string;
   avatarColor: AvatarTone;
+  avatarUrl: string | null;
   createdAt: string;
 }
 
@@ -73,6 +85,7 @@ export interface UserSummary {
   email: string;
   nickname: string;
   avatarColor: AvatarTone;
+  avatarUrl: string | null;
 }
 
 export interface GroupSummary {
@@ -132,6 +145,7 @@ export interface MemberSummary {
   nickname: string;
   email: string;
   avatarColor: AvatarTone;
+  avatarUrl: string | null;
   role: MemberRole;
   joinedAt: string;
   daysReadThisWeek: number;
@@ -167,12 +181,22 @@ export interface PersonalSummary {
 export interface WeeklyOverview {
   totalLogs: number;
   totalPages: number;
-  ranking: {
-    member: UserSummary;
-    pages: number;
-    days: number;
+  achievedMemberCount: number;
+  weeks: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    isCurrentWeek: boolean;
+    achievedMemberCount: number;
+    totalLogs: number;
+    totalPages: number;
+    members: {
+      achieved: boolean;
+      days: number;
+      pages: number;
+      member: UserSummary;
+    }[];
   }[];
-  mostReadBook: BookSummary | null;
 }
 
 export interface GroupWorkspace {

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { MobileMemberAccordionList } from "@/components/domain/mobile-member-accordion-list";
 import { MemberCard } from "@/components/domain/member-card";
 import { ReadingDaysStrip } from "@/components/domain/reading-days-strip";
 import { ReadingLogCard } from "@/components/domain/reading-log-card";
@@ -45,16 +46,13 @@ function MemberSummaryStats({
   );
 }
 
-function MobileMemberExpanded({ member }: { member: MemberSummary }) {
-  return <MemberSummaryStats className="grid gap-3 sm:hidden" member={member} />;
-}
-
 function MemberDetailPanel({ member }: { member: MemberSummary }) {
   return (
     <div className="space-y-4">
       <Card className="space-y-5">
         <div className="flex items-start gap-3">
           <Avatar
+            avatarUrl={member.avatarUrl}
             name={member.nickname}
             size="lg"
             tone={member.avatarColor}
@@ -142,15 +140,12 @@ export default async function MembersPage({
       ) : null}
 
       <div className="grid gap-6 min-[720px]:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="space-y-3">
+        <MobileMemberAccordionList members={workspace.members} />
+
+        <div className="hidden space-y-3 min-[720px]:block">
           {workspace.members.map((member) => (
             <MemberCard
               key={member.id}
-              expandedContent={
-                member.userId === selectedMember.userId ? (
-                  <MobileMemberExpanded member={selectedMember} />
-                ) : undefined
-              }
               groupId={groupId}
               member={member}
               selected={member.userId === selectedMember.userId}

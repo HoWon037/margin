@@ -13,10 +13,11 @@ Margin is a mobile-first private book club MVP built with Next.js App Router, Ty
 ## Local setup
 
 1. Copy `.env.example` to `.env.local`.
-2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-3. Run the SQL in [`supabase/schema.sql`](/Users/limdy/Documents/Codex/margin/supabase/schema.sql).
-4. Install dependencies with `npm install`.
-5. Start the app with `npm run dev`.
+2. Add `NEXT_PUBLIC_SUPABASE_URL` and either `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` or `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+3. To enable server-side signup without email confirmation, also add either `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`.
+4. Run the SQL in [`supabase/schema.sql`](/Users/limdy/Documents/Codex/margin/supabase/schema.sql).
+5. Install dependencies with `npm install`.
+6. Start the app with `npm run dev`.
 
 If Supabase env vars are missing, the app falls back to a mock workspace so the UI and route structure remain usable.
 

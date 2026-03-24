@@ -11,7 +11,7 @@ import { Select } from "@/components/ui/select";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
 import { Toast } from "@/components/ui/toast";
-import { formatDateLong } from "@/lib/date";
+import { formatDateLong, getTodayKey } from "@/lib/date";
 
 interface LogReadingFormProps {
   groupId: string;
@@ -55,6 +55,7 @@ export function LogReadingForm({
     ? String(parsedEndPage - parsedStartPage + 1)
     : "";
   const effectivePagesRead = derivedPagesRead || pagesRead;
+  const todayKey = getTodayKey();
 
   if (!books.length) {
     return (
@@ -72,7 +73,7 @@ export function LogReadingForm({
       <Card className="space-y-5">
         <div className="space-y-1">
           <p className="type-caption uppercase tracking-[0.16em] text-label-assistive">
-            {formatDateLong(new Date().toISOString().slice(0, 10))}
+            {formatDateLong(todayKey)}
           </p>
           <h2 className="text-[1.0625rem] leading-6 font-semibold tracking-[-0.02em] text-label-strong sm:type-heading1">
             오늘 읽은 내용
@@ -80,6 +81,7 @@ export function LogReadingForm({
         </div>
 
         <input name="groupId" type="hidden" value={groupId} />
+        <input name="date" type="hidden" value={todayKey} />
 
         <Select
           error={state.fieldErrors?.bookId?.[0]}

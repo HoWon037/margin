@@ -1,5 +1,12 @@
 import { cache } from "react";
-import { formatWeekdayShort, getTodayKey, getWeekDates, toDateKey } from "@/lib/date";
+import { unstable_noStore as noStore } from "next/cache";
+import {
+  formatWeekdayShort,
+  getTodayKey,
+  getWeekDates,
+  parseDateKey,
+  toDateKey,
+} from "@/lib/date";
 import { DEMO_GROUP_ID, DEMO_INVITE_CODE } from "@/lib/constants";
 import { createMockDataset } from "@/lib/data/mock";
 import type { Database } from "@/lib/supabase/database.types";
@@ -30,12 +37,52 @@ type WeeklyDateMeta = {
   label: string;
 };
 
+type WeeklyRange = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  isCurrentWeek: boolean;
+};
+
+function getWeekStartDate(referenceDate: Date) {
+  const start = new Date(referenceDate);
+  const day = start.getDay();
+  const offset = day === 0 ? -6 : 1 - day;
+
+  start.setDate(start.getDate() + offset);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function getWeekKey(dateKey: string) {
+  return toDateKey(getWeekStartDate(parseDateKey(dateKey)));
+}
+
+function buildRecentWeekRanges(referenceDate = new Date(), count = 6): WeeklyRange[] {
+  const currentWeekStart = getWeekStartDate(referenceDate);
+
+  return Array.from({ length: count }, (_, index) => {
+    const start = new Date(currentWeekStart);
+    start.setDate(currentWeekStart.getDate() - index * 7);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    return {
+      id: toDateKey(start),
+      startDate: toDateKey(start),
+      endDate: toDateKey(end),
+      isCurrentWeek: index === 0,
+    };
+  });
+}
+
 function toUserSummary(user: SourceUser): UserSummary {
   return {
     id: user.id,
     email: user.email,
     nickname: user.nickname,
     avatarColor: user.avatarColor,
+    avatarUrl: user.avatarUrl,
   };
 }
 
@@ -61,6 +108,7 @@ function buildUserSummaryFromAuth(
       user.email?.split("@")[0] ??
       "독자",
     avatarColor: profile?.avatar_color ?? "slate",
+    avatarUrl: profile?.avatar_url ?? null,
   };
 }
 
@@ -91,6 +139,7 @@ function buildFallbackUserRow(
     email: user.email ?? "",
     login_id: loginId,
     nickname,
+    avatar_url: null,
     avatar_color: avatarColor as UserRow["avatar_color"],
     created_at: new Date().toISOString(),
   };
@@ -149,6 +198,7 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
   const todayKey = getTodayKey();
   const weekKeys = getWeekDates().map(toDateKey);
   const weekKeySet = new Set(weekKeys);
+  const weeklyRanges = buildRecentWeekRanges();
   const weeklyDateMeta: WeeklyDateMeta[] = weekKeys.map((dateKey) => ({
     date: dateKey,
     label: formatWeekdayShort(dateKey),
@@ -157,6 +207,10 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
   const logsByUser = new Map<string, EnrichedReadingLog[]>();
   const weeklyLogsByUser = new Map<string, EnrichedReadingLog[]>();
   const weeklyReadDatesByUser = new Map<string, Set<string>>();
+  const weeklyStatsByWeekAndUser = new Map<
+    string,
+    Map<string, { totalLogs: number; totalPages: number; readDates: Set<string> }>
+  >();
   const readingBooksByUser = new Map<
     string,
     Array<{ id: string; title: string; author: string; status: SourceBook["status"] }>
@@ -187,6 +241,19 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
 
   for (const log of enrichedLogs) {
     pushMapValue(logsByUser, log.member.id, log);
+
+    const weekKey = getWeekKey(log.date);
+    const weekStatsByUser = weeklyStatsByWeekAndUser.get(weekKey) ?? new Map();
+    const currentWeekStats = weekStatsByUser.get(log.member.id) ?? {
+      totalLogs: 0,
+      totalPages: 0,
+      readDates: new Set<string>(),
+    };
+    currentWeekStats.totalLogs += 1;
+    currentWeekStats.totalPages += log.pagesRead;
+    currentWeekStats.readDates.add(log.date);
+    weekStatsByUser.set(log.member.id, currentWeekStats);
+    weeklyStatsByWeekAndUser.set(weekKey, weekStatsByUser);
 
     if (weekKeySet.has(log.date)) {
       pushMapValue(weeklyLogsByUser, log.member.id, log);
@@ -240,9 +307,10 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
         nickname: user.nickname,
         email: user.email,
         avatarColor: user.avatarColor,
+        avatarUrl: user.avatarUrl,
         role: member.role,
         joinedAt: member.joinedAt,
-        daysReadThisWeek: memberWeeklyLogs.length,
+        daysReadThisWeek: weeklyReadDates.size,
         totalPagesThisWeek: memberWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
         weeklyReadDays,
         recentLogs: memberLogs.slice(0, 4),
@@ -275,28 +343,50 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
     };
   });
   const myWeeklyLogs = weeklyLogsByUser.get(dataset.currentUserId) ?? [];
+  const myWeeklyReadDates = weeklyReadDatesByUser.get(dataset.currentUserId) ?? new Set();
   const myWeeklyPages = myWeeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0);
+  const weeklyGoalReached = (days: number, pages: number) =>
+    dataset.group.weeklyGoalType === "days"
+      ? days >= dataset.group.weeklyGoalValue
+      : pages >= dataset.group.weeklyGoalValue;
 
-  const ranking = members
-    .map((member) => ({
-      member: {
-        id: member.userId,
-        email: member.email,
-        nickname: member.nickname,
-        avatarColor: member.avatarColor,
-      },
-      pages: member.totalPagesThisWeek,
-      days: member.daysReadThisWeek,
-    }))
-    .sort((a, b) => b.pages - a.pages);
+  const weeklyHistory = weeklyRanges.map((range) => {
+    const statsByUser = weeklyStatsByWeekAndUser.get(range.id) ?? new Map();
+    const memberStatuses = members.map((member) => {
+      const memberStats = statsByUser.get(member.userId);
+      const days = memberStats?.readDates.size ?? 0;
+      const pages = memberStats?.totalPages ?? 0;
 
-  const overviewBook = books.reduce<BookSummary | null>((topBook, book) => {
-    if (!topBook || book.totalLoggedPages > topBook.totalLoggedPages) {
-      return book;
-    }
+      return {
+        member: {
+          id: member.userId,
+          email: member.email,
+          nickname: member.nickname,
+          avatarColor: member.avatarColor,
+          avatarUrl: member.avatarUrl,
+        },
+        days,
+        pages,
+        achieved: weeklyGoalReached(days, pages),
+      };
+    });
 
-    return topBook;
-  }, null);
+    return {
+      id: range.id,
+      startDate: range.startDate,
+      endDate: range.endDate,
+      isCurrentWeek: range.isCurrentWeek,
+      totalLogs: memberStatuses.reduce(
+        (sum, status) => sum + (statsByUser.get(status.member.id)?.totalLogs ?? 0),
+        0,
+      ),
+      totalPages: memberStatuses.reduce((sum, status) => sum + status.pages, 0),
+      achievedMemberCount: memberStatuses.filter((status) => status.achieved).length,
+      members: memberStatuses,
+    };
+  });
+
+  const currentWeekOverview = weeklyHistory[0];
 
   return {
     group: {
@@ -321,10 +411,10 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
     }),
     recentLogs: enrichedLogs,
     personalSummary: {
-      daysReadThisWeek: myWeeklyLogs.length,
+      daysReadThisWeek: myWeeklyReadDates.size,
       weeklyGoalProgress:
         dataset.group.weeklyGoalType === "days"
-          ? clampPercent((myWeeklyLogs.length / dataset.group.weeklyGoalValue) * 100)
+          ? clampPercent((myWeeklyReadDates.size / dataset.group.weeklyGoalValue) * 100)
           : clampPercent((myWeeklyPages / dataset.group.weeklyGoalValue) * 100),
       weeklyGoalLabel: formatGoal(
         dataset.group.weeklyGoalType,
@@ -333,10 +423,10 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
       pagesThisWeek: myWeeklyPages,
     },
     weeklyOverview: {
-      totalLogs: weeklyLogs.length,
-      totalPages: weeklyLogs.reduce((sum, log) => sum + log.pagesRead, 0),
-      ranking,
-      mostReadBook: overviewBook,
+      totalLogs: currentWeekOverview?.totalLogs ?? 0,
+      totalPages: currentWeekOverview?.totalPages ?? 0,
+      achievedMemberCount: currentWeekOverview?.achievedMemberCount ?? 0,
+      weeks: weeklyHistory,
     },
     todayPrompt: "오늘 읽은 내용을 가볍게 남겨 보세요.",
     hasLoggedToday: dataset.logs.some(
@@ -439,6 +529,7 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
       email: profile.email,
       nickname: profile.nickname,
       avatarColor: profile.avatar_color,
+      avatarUrl: profile.avatar_url,
       createdAt: profile.created_at,
     })),
     members: members.map<SourceGroupMember>((member) => ({
@@ -477,7 +568,8 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
   };
 }
 
-export const getGroupWorkspace = cache(async (groupId: string) => {
+export async function getGroupWorkspace(groupId: string) {
+  noStore();
   const supabaseDataset = await getSupabaseDataset(groupId);
 
   if (supabaseDataset) {
@@ -489,13 +581,14 @@ export const getGroupWorkspace = cache(async (groupId: string) => {
   }
 
   return null;
-});
+}
 
 export const getLandingWorkspace = cache(async () => {
   return buildWorkspace(createMockDataset());
 });
 
-export const getCurrentUserSummary = cache(async () => {
+export async function getCurrentUserSummary() {
+  noStore();
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
@@ -519,9 +612,10 @@ export const getCurrentUserSummary = cache(async () => {
   const profile = profileQuery.data as UserRow | null;
 
   return buildUserSummaryFromAuth(user, profile);
-});
+}
 
-export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
+export async function getGroupDirectory(): Promise<GroupDirectory> {
+  noStore();
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
@@ -622,7 +716,7 @@ export const getGroupDirectory = cache(async (): Promise<GroupDirectory> => {
     demoGroup: null,
     isDemoMode: false,
   };
-});
+}
 
 export async function getInvitePreview(inviteCode: string) {
   const normalized = inviteCode.trim().toUpperCase();

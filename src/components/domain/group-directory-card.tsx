@@ -24,7 +24,7 @@ export function GroupDirectoryCard({
                 {item.group.name}
               </p>
               {item.group.description ? (
-                <p className="break-words type-body text-label-alternative">
+                <p className="line-clamp-2 break-words type-body text-label-alternative">
                   {item.group.description}
                 </p>
               ) : null}
@@ -34,11 +34,11 @@ export function GroupDirectoryCard({
             </Chip>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-[112px_minmax(0,1fr)]">
             <div className="rounded-2xl bg-fill-alternative p-4">
               <p className="type-caption text-label-assistive">멤버</p>
               <p className="mt-1 type-label text-label-strong tabular-nums">
-                {item.group.memberCount}
+                {item.group.memberCount}명
               </p>
             </div>
             <div className="rounded-2xl bg-fill-alternative p-4">
@@ -48,12 +48,6 @@ export function GroupDirectoryCard({
                   item.group.weeklyGoalType,
                   item.group.weeklyGoalValue,
                 )}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-fill-alternative p-4">
-              <p className="type-caption text-label-assistive">초대 코드</p>
-              <p className="mt-1 type-label text-label-strong tabular-nums">
-                {item.group.inviteCode}
               </p>
             </div>
           </div>

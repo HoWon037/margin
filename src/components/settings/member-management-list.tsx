@@ -1,8 +1,8 @@
 "use client";
 
 import { removeMemberAction } from "@/app/actions";
-import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { ConfirmActionDialog } from "@/components/ui/modal";
 import type { MemberSummary } from "@/lib/types";
 import { formatMemberRole } from "@/lib/utils";
 
@@ -34,29 +34,15 @@ export function MemberManagementList({
           {member.role === "owner" ? (
             <Chip tone="primary">{formatMemberRole(member.role)}</Chip>
           ) : (
-            <form
+            <ConfirmActionDialog
               action={removeMemberAction}
-              onSubmit={(event) => {
-                if (!window.confirm(`정말 ${member.nickname}님을 내보내시겠습니까?`)) {
-                  event.preventDefault();
-                }
-              }}
-            >
-              <input name="groupId" type="hidden" value={groupId} />
-              <input
-                name="memberUserId"
-                type="hidden"
-                value={member.userId}
-              />
-              <Button
-                disabled={!isOwner}
-                size="sm"
-                type="submit"
-                variant="danger"
-              >
-                내보내기
-              </Button>
-            </form>
+              confirmLabel="내보내기"
+              description={`${member.nickname}님은 이 모임의 기록을 더 이상 볼 수 없게 됩니다.`}
+              disabled={!isOwner}
+              fields={{ groupId, memberUserId: member.userId }}
+              title={`${member.nickname}님을 내보낼까요?`}
+              triggerLabel="내보내기"
+            />
           )}
         </div>
       ))}

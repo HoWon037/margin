@@ -22,6 +22,10 @@ export function readToast(searchParams: SearchParams) {
     return null;
   }
 
+  if (title === "로그아웃되었습니다") {
+    return null;
+  }
+
   const tone = getStringParam(searchParams, "tone");
   const description = getStringParam(searchParams, "description");
   const allowedTones: ToastTone[] = [

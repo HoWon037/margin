@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteGroupAction } from "@/app/actions";
-import { Button } from "@/components/ui/button";
+import { ConfirmActionDialog } from "@/components/ui/modal";
 
 interface DeleteGroupFormProps {
   groupId: string;
@@ -9,18 +9,13 @@ interface DeleteGroupFormProps {
 
 export function DeleteGroupForm({ groupId }: DeleteGroupFormProps) {
   return (
-    <form
+    <ConfirmActionDialog
       action={deleteGroupAction}
-      onSubmit={(event) => {
-        if (!window.confirm("정말 이 모임을 삭제하시겠습니까?")) {
-          event.preventDefault();
-        }
-      }}
-    >
-      <input name="groupId" type="hidden" value={groupId} />
-      <Button type="submit" variant="danger">
-        모임 삭제
-      </Button>
-    </form>
+      confirmLabel="모임 삭제"
+      description="모임, 책, 기록, 멤버 정보가 모두 삭제되며 되돌릴 수 없습니다."
+      fields={{ groupId }}
+      title="정말 이 모임을 삭제할까요?"
+      triggerLabel="모임 삭제"
+    />
   );
 }

@@ -33,9 +33,11 @@ export function EmptyState({
       </div>
       <div className="space-y-2">
         <h3 className="type-headline text-label-strong">{title}</h3>
-        <p className="mx-auto max-w-[34rem] type-body text-label-alternative">
-          {description}
-        </p>
+        {description ? (
+          <p className="mx-auto max-w-[34rem] type-body text-label-alternative">
+            {description}
+          </p>
+        ) : null}
       </div>
       {hasActions ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
