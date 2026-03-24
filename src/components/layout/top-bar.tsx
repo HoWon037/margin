@@ -72,12 +72,20 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 transform-gpu border-transparent bg-transparent transition-[background-color,border-color,box-shadow,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
+        "sticky top-0 z-30 border-transparent bg-transparent transition-[background-color,border-color,box-shadow,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
         isFloatingMobile
           ? "pointer-events-none border-transparent bg-transparent shadow-none"
           : "",
       )}
     >
+      <div
+        className={cn(
+          "floating-topbar-backdrop pointer-events-none fixed inset-x-0 top-0 z-0 h-[88px] origin-top transform-gpu transition-[opacity,transform] duration-[720ms] ease-[cubic-bezier(0.16,1,0.3,1)] md:hidden",
+          isFloatingMobile
+            ? "scale-y-100 opacity-100"
+            : "scale-y-90 opacity-0",
+        )}
+      />
       <div
         className="relative z-10 mx-auto max-w-[1440px] px-4 pt-4 sm:px-5"
       >
@@ -87,7 +95,7 @@ export function TopBar({
               className={cn(
                 "max-w-[180px] sm:max-w-[220px]",
                 isFloatingMobile &&
-                  "pointer-events-auto floating-readability-shadow md:hover:bg-fill-alternative",
+                  "pointer-events-auto !shadow-none md:hover:bg-fill-alternative",
               )}
               href={profileHref}
               user={currentUser}
@@ -100,14 +108,14 @@ export function TopBar({
             className={cn(
               "flex items-center gap-2 rounded-full border border-transparent px-1.5 py-1.5 transform-gpu transition-[background-color,border-color,box-shadow,transform,opacity,padding] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)]",
               isFloatingMobile &&
-                "pointer-events-auto chrome-surface floating-readability-shadow border-line-solid",
+                "pointer-events-auto chrome-surface border-line-solid",
             )}
           >
             <ThemeToggle
               className={cn(
                 "rounded-full",
                 isFloatingMobile &&
-                  "border-line-solid/90 shadow-xs md:hover:bg-fill-alternative",
+                  "border-line-solid/90 !shadow-none md:hover:bg-fill-alternative",
               )}
             />
             {isOwner ? (
@@ -118,7 +126,7 @@ export function TopBar({
                   className: cn(
                     "rounded-full px-3",
                     isFloatingMobile &&
-                      "h-9 border-line-solid/90 px-3 shadow-xs md:hover:bg-fill-alternative",
+                      "h-9 border-line-solid/90 px-3 md:hover:bg-fill-alternative",
                   ),
                 })}
                 href={`/group/${groupId}/settings`}
