@@ -52,10 +52,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
           />
         </div>
 
-        {state.message ? (
+        {state.status === "error" && state.message ? (
           <Toast
             title={state.message}
-            tone={state.status === "success" ? "positive" : "negative"}
+            tone="negative"
           />
         ) : null}
 

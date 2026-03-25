@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createGroupAction } from "@/app/actions";
+import { getWeekStartDate, isMondayDateKey, toDateKey } from "@/lib/date";
 import { GOAL_TYPE_OPTIONS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -15,6 +16,12 @@ export function CreateGroupForm() {
     createGroupAction,
     initialFormState,
   );
+  const initialRecordStartDate = toDateKey(getWeekStartDate(new Date()));
+  const [recordStartDate, setRecordStartDate] = useState(initialRecordStartDate);
+  const localStartDateError =
+    recordStartDate && !isMondayDateKey(recordStartDate)
+      ? "기록 시작일은 월요일만 선택할 수 있습니다."
+      : undefined;
 
   return (
     <form action={formAction} className="space-y-5">
@@ -58,13 +65,29 @@ export function CreateGroupForm() {
           type="number"
         />
       </div>
+      <TextField
+        error={state.fieldErrors?.recordStartDate?.[0] ?? localStartDateError}
+        hint={
+          state.fieldErrors?.recordStartDate?.[0] || localStartDateError
+            ? undefined
+            : "월요일만 선택할 수 있습니다."
+        }
+        label="기록 시작일"
+        min={initialRecordStartDate}
+        name="recordStartDate"
+        onChange={(event) => setRecordStartDate(event.target.value)}
+        required
+        step={7}
+        type="date"
+        value={recordStartDate}
+      />
       {state.message ? (
         <Toast
           title={state.message}
           tone={state.status === "success" ? "positive" : "negative"}
         />
       ) : null}
-      <Button block disabled={pending} size="lg" type="submit">
+      <Button block disabled={pending || Boolean(localStartDateError)} size="lg" type="submit">
         {pending ? "모임 만드는 중..." : "모임 만들기"}
       </Button>
     </form>

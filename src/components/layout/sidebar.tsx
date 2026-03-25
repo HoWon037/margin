@@ -13,6 +13,7 @@ interface SidebarProps {
 
 export function Sidebar({ group }: SidebarProps) {
   const pathname = usePathname();
+
   const navItems = getGroupNavigation(group.id).map((item) => ({
     ...item,
     active: item.href === pathname,

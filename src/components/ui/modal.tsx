@@ -5,12 +5,16 @@ import { useEffect, useId, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/cn";
+import { usePresence } from "@/lib/use-presence";
 
 function DialogShell({
   children,
+  open,
   onClose,
 }: {
   children: ReactNode;
+  open: boolean;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -31,7 +35,10 @@ function DialogShell({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-dimmer/80 p-4 sm:items-center"
+      className={cn(
+        "fixed inset-0 z-50 flex items-end justify-center bg-dimmer/80 p-4 transition-opacity duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)] sm:items-center",
+        open ? "opacity-100" : "pointer-events-none opacity-0",
+      )}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -73,6 +80,9 @@ interface ConfirmActionDialogProps {
   fields: Record<string, string>;
   tone?: "primary" | "danger";
   triggerVariant?: "primary" | "secondary" | "ghost" | "danger";
+  triggerClassName?: string;
+  triggerBlock?: boolean;
+  triggerSize?: "sm" | "md" | "lg";
   disabled?: boolean;
 }
 
@@ -85,30 +95,41 @@ export function ConfirmActionDialog({
   fields,
   tone = "danger",
   triggerVariant,
+  triggerClassName,
+  triggerBlock = false,
+  triggerSize = "sm",
   disabled = false,
 }: ConfirmActionDialogProps) {
   const [open, setOpen] = useState(false);
+  const present = usePresence(open, 240);
   const titleId = useId();
   const descriptionId = useId();
 
   return (
     <>
       <Button
+        block={triggerBlock}
+        className={triggerClassName}
         disabled={disabled}
         onClick={() => setOpen(true)}
-        size="sm"
+        size={triggerSize}
         type="button"
         variant={triggerVariant ?? (tone === "danger" ? "danger" : "secondary")}
       >
         {triggerLabel}
       </Button>
-      {open ? (
-        <DialogShell onClose={() => setOpen(false)}>
+      {present ? (
+        <DialogShell onClose={() => setOpen(false)} open={open}>
           <Card
             aria-describedby={descriptionId}
             aria-labelledby={titleId}
             aria-modal="true"
-            className="w-full max-w-md space-y-5 rounded-xl p-5 shadow-lg"
+            className={cn(
+              "w-full max-w-md space-y-5 rounded-xl p-5 shadow-lg transition-[opacity,transform] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              open
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-2 scale-[0.98] opacity-0",
+            )}
             elevated
             role="dialog"
           >

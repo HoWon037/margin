@@ -16,7 +16,7 @@ export default function CreateGroupPage() {
           </p>
           <h1 className="type-title2 text-label-strong">새 모임 만들기</h1>
           <p className="type-body text-label-alternative">
-            이름과 목표만 정하면 바로 초대 코드를 만들 수 있습니다.
+            이름, 목표, 기록 시작일만 정하면 바로 초대 코드를 만들 수 있습니다.
           </p>
         </div>
         <CreateGroupForm />

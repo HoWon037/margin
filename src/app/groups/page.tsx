@@ -5,19 +5,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { buttonStyles } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Toast } from "@/components/ui/toast";
 import { DEMO_GROUP_ID } from "@/lib/constants";
 import { getLandingWorkspace } from "@/lib/data/queries";
 import { getGroupDirectory } from "@/lib/data/queries";
-import { readToast } from "@/lib/toast";
 
-interface GroupsPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-export default async function GroupsPage({ searchParams }: GroupsPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const toast = readToast(resolvedSearchParams);
+export default async function GroupsPage() {
   const directory = await getGroupDirectory();
   const previewWorkspace = !directory.user && directory.isDemoMode
     ? await getLandingWorkspace()
@@ -49,6 +41,7 @@ export default async function GroupsPage({ searchParams }: GroupsPageProps) {
                 description: previewWorkspace.group.description,
                 weeklyGoalType: previewWorkspace.group.weeklyGoalType,
                 weeklyGoalValue: previewWorkspace.group.weeklyGoalValue,
+                recordStartDate: previewWorkspace.group.recordStartDate,
                 inviteCode: previewWorkspace.group.inviteCode,
                 ownerId: previewWorkspace.group.ownerId,
                 memberCount: previewWorkspace.group.memberCount,
@@ -138,14 +131,6 @@ export default async function GroupsPage({ searchParams }: GroupsPageProps) {
             </div>
           </div>
         </div>
-
-        {toast ? (
-          <Toast
-            description={toast.description}
-            title={toast.title}
-            tone={toast.tone}
-          />
-        ) : null}
 
         {displayGroups.length ? (
           <section className="space-y-4">

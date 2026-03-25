@@ -1,19 +1,14 @@
 import { notFound } from "next/navigation";
-import { updateBookStatusAction } from "@/app/actions";
+import { BookActionsMenu } from "@/components/domain/book-actions-menu";
 import { BookCard } from "@/components/domain/book-card";
+import { BookDetailContent } from "@/components/domain/book-detail-content";
 import { AddBookForm } from "@/components/forms/add-book-form";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ProgressBar } from "@/components/ui/progress-bar";
 import { Tabs } from "@/components/ui/tabs";
-import { Toast } from "@/components/ui/toast";
-import { cn } from "@/lib/cn";
-import { BOOK_STATUS_OPTIONS } from "@/lib/constants";
 import { getGroupWorkspace } from "@/lib/data/queries";
-import { getStringParam, readToast } from "@/lib/toast";
+import { getStringParam } from "@/lib/toast";
 import type { BookSummary } from "@/lib/types";
-import { formatBookStatus, formatPages } from "@/lib/utils";
 
 interface BooksPageProps {
   params: Promise<{ groupId: string }>;
@@ -24,118 +19,44 @@ interface BookDetailPanelProps {
   book: BookSummary;
   groupId: string;
   statusFilter: "reading" | "finished";
-}
-
-function getBookProgressValue(book: BookSummary) {
-  if (book.status === "finished") {
-    return 100;
-  }
-
-  if (!book.totalPages) {
-    return 0;
-  }
-
-  return Math.min(100, (book.myLoggedPages / book.totalPages) * 100);
-}
-
-function BookStatsGrid({ book }: { book: BookSummary }) {
-  const progressValue = getBookProgressValue(book);
-
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-fill-alternative p-4">
-          <p className="type-caption text-label-assistive">전체 페이지</p>
-          <p className="mt-1 type-label text-label-strong">
-            {formatPages(book.totalPages)}
-          </p>
-        </div>
-        <div className="rounded-2xl bg-fill-alternative p-4">
-          <p className="type-caption text-label-assistive">내 기록</p>
-          <p className="mt-1 type-label text-label-strong">
-            {formatPages(book.myLoggedPages)}
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-3 rounded-2xl bg-fill-alternative p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="type-label text-label-strong">진행률</p>
-          <p className="type-caption text-label-alternative">
-            {Math.round(progressValue)}%
-          </p>
-        </div>
-        <ProgressBar tone="primary" value={progressValue} />
-      </div>
-    </>
-  );
-}
-
-function BookStatusActions({
-  book,
-  groupId,
-  statusFilter,
-}: BookDetailPanelProps) {
-  return (
-    <div className="space-y-3">
-      <p className="type-label text-label-strong">상태</p>
-      <div className="grid grid-cols-2 gap-3">
-        {BOOK_STATUS_OPTIONS.map((option) => {
-          const active = book.status === option.value;
-
-          return (
-            <form key={option.value} action={updateBookStatusAction}>
-              <input name="groupId" type="hidden" value={groupId} />
-              <input name="bookId" type="hidden" value={book.id} />
-              <input
-                name="redirectTo"
-                type="hidden"
-                value={buildBooksHref(groupId, statusFilter, book.id)}
-              />
-              <input name="status" type="hidden" value={option.value} />
-              <button
-                className={cn(
-                  "flex h-12 w-full items-center justify-center rounded-2xl border type-label transition",
-                  active
-                    ? "border-primary/25 bg-primary/10 text-label-strong"
-                    : "border-line-solid bg-bg-normal text-label-alternative md:hover:border-line-normal md:hover:bg-fill-alternative md:hover:text-label-strong",
-                )}
-                disabled={active}
-                type="submit"
-              >
-                {option.label}
-              </button>
-            </form>
-          );
-        })}
-      </div>
-    </div>
-  );
+  initialEditing?: boolean;
 }
 
 function MobileBookExpanded({
   book,
   groupId,
   statusFilter,
+  initialEditing = false,
 }: BookDetailPanelProps) {
   return (
-    <div className="space-y-3 sm:hidden">
-      <BookStatsGrid book={book} />
-      <BookStatusActions
+    <div className="sm:hidden">
+      <BookDetailContent
         book={book}
         groupId={groupId}
-        statusFilter={statusFilter}
+        initialEditing={initialEditing}
+        key={`${book.id}:${initialEditing ? "edit" : "view"}:mobile`}
+        redirectTo={buildBooksHref(groupId, statusFilter, book.id)}
+        showHeader={false}
       />
     </div>
   );
 }
 
-function buildBooksHref(groupId: string, status: string, bookId?: string) {
+function buildBooksHref(
+  groupId: string,
+  status: string,
+  bookId?: string,
+  edit?: boolean,
+) {
   const params = new URLSearchParams();
   params.set("status", status);
 
   if (bookId) {
     params.set("book", bookId);
+  }
+
+  if (edit) {
+    params.set("edit", "details");
   }
 
   return `/group/${groupId}/books?${params.toString()}`;
@@ -145,31 +66,16 @@ function BookDetailPanel({
   book,
   groupId,
   statusFilter,
+  initialEditing = false,
 }: BookDetailPanelProps) {
   return (
     <Card className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <p className="truncate type-headline text-label-strong" title={book.title}>
-            {book.title}
-          </p>
-          <p
-            className="truncate type-label-reading text-label-alternative"
-            title={book.author}
-          >
-            {book.author}
-          </p>
-        </div>
-        <Chip tone={book.status === "reading" ? "primary" : "neutral"}>
-          {formatBookStatus(book.status)}
-        </Chip>
-      </div>
-
-      <BookStatsGrid book={book} />
-      <BookStatusActions
+      <BookDetailContent
         book={book}
         groupId={groupId}
-        statusFilter={statusFilter}
+        initialEditing={initialEditing}
+        key={`${book.id}:${initialEditing ? "edit" : "view"}:desktop`}
+        redirectTo={buildBooksHref(groupId, statusFilter, book.id)}
       />
     </Card>
   );
@@ -182,9 +88,9 @@ export default async function BooksPage({
   const { groupId } = await params;
   const resolvedSearchParams = await searchParams;
   const workspace = await getGroupWorkspace(groupId);
-  const toast = readToast(resolvedSearchParams);
   const selectedBookId = getStringParam(resolvedSearchParams, "book");
   const rawStatusFilter = getStringParam(resolvedSearchParams, "status");
+  const editMode = getStringParam(resolvedSearchParams, "edit") === "details";
   const statusFilter = rawStatusFilter === "finished" ? "finished" : "reading";
 
   if (!workspace) {
@@ -200,14 +106,6 @@ export default async function BooksPage({
 
   return (
     <div className="space-y-6">
-      {toast ? (
-        <Toast
-          description={toast.description}
-          title={toast.title}
-          tone={toast.tone}
-        />
-      ) : null}
-
       <AddBookForm groupId={groupId} />
 
       <Tabs
@@ -237,11 +135,22 @@ export default async function BooksPage({
                     <MobileBookExpanded
                       book={selectedBook}
                       groupId={groupId}
+                      initialEditing={editMode}
                       statusFilter={statusFilter}
                     />
                   ) : undefined
                 }
                 groupId={groupId}
+                headerActions={
+                  <BookActionsMenu
+                    bookId={book.id}
+                    buttonClassName="h-[22px] w-[22px] border-0 bg-transparent p-0 shadow-none md:hover:bg-fill-alternative"
+                    editHref={buildBooksHref(groupId, statusFilter, book.id, true)}
+                    groupId={groupId}
+                    redirectTo={buildBooksHref(groupId, statusFilter, book.id)}
+                    status={book.status}
+                  />
+                }
                 href={buildBooksHref(groupId, statusFilter, book.id)}
                 selected={book.id === selectedBook?.id}
               />
@@ -273,6 +182,7 @@ export default async function BooksPage({
             <BookDetailPanel
               book={selectedBook}
               groupId={groupId}
+              initialEditing={editMode}
               statusFilter={statusFilter}
             />
           </div>

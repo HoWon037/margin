@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { formatDateShort } from "@/lib/date";
@@ -6,9 +7,10 @@ import { formatPages } from "@/lib/utils";
 
 interface ReadingLogCardProps {
   log: EnrichedReadingLog;
+  actions?: ReactNode;
 }
 
-export function ReadingLogCard({ log }: ReadingLogCardProps) {
+export function ReadingLogCard({ log, actions }: ReadingLogCardProps) {
   const pageRange =
     typeof log.startPage === "number" && typeof log.endPage === "number"
       ? `${log.startPage}-${log.endPage} 페이지`
@@ -17,7 +19,7 @@ export function ReadingLogCard({ log }: ReadingLogCardProps) {
   const bookAuthor = log.book?.author ?? "";
 
   return (
-    <Card interactive className="space-y-4">
+    <Card interactive className="relative space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <Avatar
@@ -61,11 +63,15 @@ export function ReadingLogCard({ log }: ReadingLogCardProps) {
         </p>
       </div>
 
-      {log.memo ? (
-        <p className="type-body-reading text-label-normal">{log.memo}</p>
-      ) : (
-        <p className="type-body text-label-assistive">메모 없음</p>
-      )}
+      <div className={actions ? "pr-10" : undefined}>
+        {log.memo ? (
+          <p className="type-body-reading text-label-normal">{log.memo}</p>
+        ) : (
+          <p className="type-body text-label-assistive">메모 없음</p>
+        )}
+      </div>
+
+      {actions ? <div className="absolute right-4 bottom-[14px]">{actions}</div> : null}
     </Card>
   );
 }

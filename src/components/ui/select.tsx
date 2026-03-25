@@ -14,10 +14,15 @@ export function Select({
   error,
   className,
   children,
+  name,
   ...props
 }: SelectProps) {
   const generatedId = useId();
-  const selectId = id ?? generatedId;
+  const stableNameId =
+    typeof name === "string" && name.trim().length
+      ? `field-${name.trim().replace(/[^a-zA-Z0-9_-]/g, "-")}`
+      : undefined;
+  const selectId = id ?? stableNameId ?? generatedId;
   const helperText = error ?? hint;
   const helperId = helperText ? `${selectId}-helper` : undefined;
 
@@ -33,6 +38,7 @@ export function Select({
           error && "border-negative focus:border-negative focus:ring-negative/10",
           className,
         )}
+        name={name}
         {...props}
       >
         {children}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isMondayDateKey } from "@/lib/date";
 
 const avatarColorSchema = z.enum([
   "violet",
@@ -75,6 +76,11 @@ export const createGroupSchema = z.object({
     .int()
     .min(1, "주간 목표는 1 이상이어야 합니다.")
     .max(1000, "주간 목표는 1000 이하로 입력해 주세요."),
+  recordStartDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "시작일 형식이 올바르지 않습니다.")
+    .refine((value) => isMondayDateKey(value), "기록 시작일은 월요일만 선택할 수 있습니다."),
 });
 
 export const joinGroupSchema = z.object({
@@ -116,6 +122,26 @@ export const bookStatusUpdateSchema = z.object({
   groupId: z.string().trim().min(1),
   bookId: z.string().trim().min(1),
   status: z.enum(["reading", "finished"]),
+});
+
+export const bookDetailsUpdateSchema = z.object({
+  groupId: z.string().trim().min(1),
+  bookId: z.string().trim().min(1),
+  title: z
+    .string()
+    .trim()
+    .min(1, "책 제목을 입력해 주세요.")
+    .max(80, "책 제목은 80자 이하로 입력해 주세요."),
+  author: z
+    .string()
+    .trim()
+    .min(1, "저자를 입력해 주세요.")
+    .max(60, "저자명은 60자 이하로 입력해 주세요."),
+  totalPages: z.coerce
+    .number()
+    .int()
+    .min(1, "전체 페이지를 입력해 주세요.")
+    .max(5000, "전체 페이지는 5000 이하로 입력해 주세요."),
 });
 
 export const settingsSchema = z.object({

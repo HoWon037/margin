@@ -6,6 +6,7 @@ import type { AvatarTone } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { usePresence } from "@/lib/use-presence";
 
 interface AvatarUploadFieldProps {
   name: string;
@@ -32,6 +33,7 @@ export function AvatarUploadField({
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [showToneFallback, setShowToneFallback] = useState(false);
+  const showToneFallbackPanel = usePresence(showToneFallback, 220);
 
   useEffect(() => {
     return () => {
@@ -45,18 +47,68 @@ export function AvatarUploadField({
     fileInputRef.current?.click();
   }
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function optimizeImageFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      return file;
+    }
+
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 512;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+
+      canvas.width = width;
+      canvas.height = height;
+
+      if (!context) {
+        bitmap.close();
+        return file;
+      }
+
+      context.drawImage(bitmap, 0, 0, width, height);
+      bitmap.close();
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.82);
+      });
+
+      if (!blob || blob.size >= file.size) {
+        return file;
+      }
+
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      return new File([blob], `${baseName || "avatar"}.jpg`, {
+        type: "image/jpeg",
+      });
+    } catch {
+      return file;
+    }
+  }
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
+    const optimizedFile = await optimizeImageFile(file);
+
     if (objectUrl) {
       URL.revokeObjectURL(objectUrl);
     }
 
-    const nextObjectUrl = URL.createObjectURL(file);
+    if (fileInputRef.current) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(optimizedFile);
+      fileInputRef.current.files = dataTransfer.files;
+    }
+
+    const nextObjectUrl = URL.createObjectURL(optimizedFile);
     setObjectUrl(nextObjectUrl);
     setPreviewUrl(nextObjectUrl);
     setRemoveAvatar(false);
@@ -154,30 +206,44 @@ export function AvatarUploadField({
         <input name={toneInputName} type="hidden" value={selectedTone} />
       ) : null}
 
-      {allowToneFallback && !previewUrl && showToneFallback ? (
-        <div className="space-y-3 rounded-[20px] border border-line-solid bg-bg-elevated px-4 py-4">
-          <div className="space-y-1 text-center sm:text-left">
-            <p className="type-label text-label-strong">기본 아바타</p>
-            <p className="type-caption text-label-assistive">
-              사진 없이 시작할 때만 적용됩니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
-            {AVATAR_SWATCHES.map((swatch) => (
-              <button
-                key={swatch.value}
-                className={cn(
-                  "flex h-11 w-11 items-center justify-center rounded-full border transition-[border-color,transform,box-shadow] duration-200",
-                  selectedTone === swatch.value
-                    ? "border-label-strong bg-bg-normal shadow-xs"
-                    : "border-line-solid bg-bg-normal",
-                )}
-                onClick={() => setSelectedTone(swatch.value)}
-                type="button"
-              >
-                <Avatar name={name} size="sm" tone={swatch.value} />
-              </button>
-            ))}
+      {allowToneFallback && !previewUrl && showToneFallbackPanel ? (
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+            showToneFallback ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+          )}
+        >
+          <div className="overflow-hidden">
+            <div
+              className={cn(
+                "space-y-3 rounded-[20px] border border-line-solid bg-bg-elevated px-4 py-4 transition-[transform,opacity] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                showToneFallback ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+              )}
+            >
+              <div className="space-y-1 text-center sm:text-left">
+                <p className="type-label text-label-strong">기본 아바타</p>
+                <p className="type-caption text-label-assistive">
+                  사진 없이 시작할 때만 적용됩니다.
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
+                {AVATAR_SWATCHES.map((swatch) => (
+                  <button
+                    key={swatch.value}
+                    className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-full border transition-[border-color,transform,box-shadow] duration-200",
+                      selectedTone === swatch.value
+                        ? "border-label-strong bg-bg-normal shadow-xs"
+                        : "border-line-solid bg-bg-normal",
+                    )}
+                    onClick={() => setSelectedTone(swatch.value)}
+                    type="button"
+                  >
+                    <Avatar name={name} size="sm" tone={swatch.value} />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

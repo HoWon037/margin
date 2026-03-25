@@ -14,10 +14,15 @@ export function TextArea({
   hint,
   error,
   className,
+  name,
   ...props
 }: TextAreaProps) {
   const generatedId = useId();
-  const textAreaId = id ?? generatedId;
+  const stableNameId =
+    typeof name === "string" && name.trim().length
+      ? `field-${name.trim().replace(/[^a-zA-Z0-9_-]/g, "-")}`
+      : undefined;
+  const textAreaId = id ?? stableNameId ?? generatedId;
   const helperText = error ?? hint;
   const helperId = helperText ? `${textAreaId}-helper` : undefined;
 
@@ -33,6 +38,7 @@ export function TextArea({
           error && "border-negative focus:border-negative focus:ring-negative/10",
           className,
         )}
+        name={name}
         {...props}
       />
       {helperText ? (

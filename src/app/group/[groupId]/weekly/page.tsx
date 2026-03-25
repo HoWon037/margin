@@ -1,15 +1,12 @@
 import { notFound } from "next/navigation";
 import { WeeklyHistoryAccordion } from "@/components/domain/weekly-history-accordion";
 import { Card } from "@/components/ui/card";
-import { Toast } from "@/components/ui/toast";
 import { getGroupWorkspace } from "@/lib/data/queries";
-import { readToast } from "@/lib/toast";
 import type { WeeklyOverview } from "@/lib/types";
 import { formatGoal, formatPages } from "@/lib/utils";
 
 interface WeeklyPageProps {
   params: Promise<{ groupId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function WeeklySummaryCard({
@@ -54,12 +51,9 @@ function WeeklySummaryCard({
 
 export default async function WeeklyPage({
   params,
-  searchParams,
 }: WeeklyPageProps) {
   const { groupId } = await params;
-  const resolvedSearchParams = await searchParams;
   const workspace = await getGroupWorkspace(groupId);
-  const toast = readToast(resolvedSearchParams);
 
   if (!workspace) {
     notFound();
@@ -67,14 +61,6 @@ export default async function WeeklyPage({
 
   return (
     <div className="space-y-6">
-      {toast ? (
-        <Toast
-          description={toast.description}
-          title={toast.title}
-          tone={toast.tone}
-        />
-      ) : null}
-
       <WeeklySummaryCard
         goalLabel={formatGoal(
           workspace.group.weeklyGoalType,

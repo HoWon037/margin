@@ -30,6 +30,7 @@ export interface SourceGroup {
   description: string;
   weeklyGoalType: GoalType;
   weeklyGoalValue: number;
+  recordStartDate: string;
   inviteCode: string;
   ownerId: string;
   createdAt: string;
@@ -94,6 +95,7 @@ export interface GroupSummary {
   description: string;
   weeklyGoalType: GoalType;
   weeklyGoalValue: number;
+  recordStartDate: string;
   inviteCode: string;
   ownerId: string;
   memberCount: number;
@@ -184,6 +186,7 @@ export interface WeeklyOverview {
   achievedMemberCount: number;
   weeks: {
     id: string;
+    weekNumber: number;
     startDate: string;
     endDate: string;
     isCurrentWeek: boolean;

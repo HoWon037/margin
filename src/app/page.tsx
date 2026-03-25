@@ -2,22 +2,14 @@ import { redirect } from "next/navigation";
 import { EntryAuthForm } from "@/components/forms/entry-auth-form";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Toast } from "@/components/ui/toast";
 import { getCurrentUserSummary, getLandingWorkspace } from "@/lib/data/queries";
 import {
   hasSupabaseServerSecret,
   isSupabaseConfigured,
 } from "@/lib/supabase/env";
-import { readToast } from "@/lib/toast";
 import Link from "next/link";
 
-interface EntryPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
-
-export default async function EntryPage({ searchParams }: EntryPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const toast = readToast(resolvedSearchParams);
+export default async function EntryPage() {
   const user = await getCurrentUserSummary();
   const canSignIn = isSupabaseConfigured;
   const canSignUp = canSignIn;
@@ -45,14 +37,6 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
               </span>
               <span className="type-title2 text-label-strong">Margin</span>
             </div>
-
-            {toast ? (
-              <Toast
-                description={toast.description}
-                title={toast.title}
-                tone={toast.tone}
-              />
-            ) : null}
 
             <EntryAuthForm canSignIn={canSignIn} canSignUp={canSignUp} />
             {canSignIn && !hasServiceRole ? (

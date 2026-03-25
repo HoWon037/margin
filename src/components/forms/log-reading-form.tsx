@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { saveReadingLogAction } from "@/app/actions";
 import { initialFormState } from "@/lib/form-state";
 import { Button, buttonStyles } from "@/components/ui/button";
@@ -16,33 +16,57 @@ import { formatDateLong, getTodayKey } from "@/lib/date";
 interface LogReadingFormProps {
   groupId: string;
   initialBookId?: string;
+  initialLog?: {
+    id: string;
+    date: string;
+    bookId: string;
+    pagesRead: number;
+    memo: string;
+    startPage: number | null;
+    endPage: number | null;
+  };
+  bookDefaults: Record<string, number>;
   books: Array<{
     id: string;
     title: string;
     author: string;
+    totalPages: number;
   }>;
 }
 
 export function LogReadingForm({
   groupId,
   initialBookId,
+  initialLog,
+  bookDefaults,
   books,
 }: LogReadingFormProps) {
+  const defaultBookId =
+    initialLog?.bookId && books.some((book) => book.id === initialLog.bookId)
+      ? initialLog.bookId
+      : initialBookId && books.some((book) => book.id === initialBookId)
+        ? initialBookId
+      : (books[0]?.id ?? "");
   const [state, formAction, pending] = useActionState(
     saveReadingLogAction,
     initialFormState,
   );
-  const [bookId, setBookId] = useState(() => {
-    if (initialBookId && books.some((book) => book.id === initialBookId)) {
-      return initialBookId;
-    }
-
-    return books[0]?.id ?? "";
-  });
-  const [startPage, setStartPage] = useState("");
-  const [endPage, setEndPage] = useState("");
-  const [pagesRead, setPagesRead] = useState("");
-  const [memo, setMemo] = useState("");
+  const [bookId, setBookId] = useState(defaultBookId);
+  const [startPage, setStartPage] = useState(() =>
+    typeof initialLog?.startPage === "number"
+      ? String(initialLog.startPage)
+      : bookDefaults[defaultBookId]
+      ? String(bookDefaults[defaultBookId])
+      : "",
+  );
+  const [endPage, setEndPage] = useState(
+    typeof initialLog?.endPage === "number" ? String(initialLog.endPage) : "",
+  );
+  const [pagesRead, setPagesRead] = useState(
+    initialLog ? String(initialLog.pagesRead) : "",
+  );
+  const [memo, setMemo] = useState(initialLog?.memo ?? "");
+  const [clientError, setClientError] = useState<string | null>(null);
   const parsedStartPage = Number(startPage);
   const parsedEndPage = Number(endPage);
   const hasPageRange =
@@ -55,7 +79,54 @@ export function LogReadingForm({
     ? String(parsedEndPage - parsedStartPage + 1)
     : "";
   const effectivePagesRead = derivedPagesRead || pagesRead;
-  const todayKey = getTodayKey();
+  const todayKey = initialLog?.date ?? getTodayKey();
+  const selectedBook = useMemo(
+    () => books.find((book) => book.id === bookId) ?? null,
+    [bookId, books],
+  );
+
+  function handleBookChange(nextBookId: string) {
+    setBookId(nextBookId);
+    setStartPage(bookDefaults[nextBookId] ? String(bookDefaults[nextBookId]) : "");
+    setEndPage("");
+    setPagesRead("");
+    setClientError(null);
+  }
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    if (!selectedBook) {
+      return;
+    }
+
+    const totalPages = selectedBook.totalPages;
+
+    if (hasPageRange) {
+      if (parsedStartPage > totalPages || parsedEndPage > totalPages) {
+        event.preventDefault();
+        setClientError(`전체 ${totalPages}페이지를 넘길 수 없습니다.`);
+      }
+      return;
+    }
+
+    const numericPagesRead = Number(effectivePagesRead);
+    if (!Number.isFinite(numericPagesRead) || numericPagesRead < 1) {
+      return;
+    }
+
+    if (startPage !== "" && Number.isFinite(parsedStartPage)) {
+      const derivedEndPage = parsedStartPage + numericPagesRead - 1;
+      if (parsedStartPage > totalPages || derivedEndPage > totalPages) {
+        event.preventDefault();
+        setClientError(`전체 ${totalPages}페이지를 넘길 수 없습니다.`);
+        return;
+      }
+    }
+
+    if (numericPagesRead > totalPages) {
+      event.preventDefault();
+      setClientError(`전체 ${totalPages}페이지를 넘길 수 없습니다.`);
+    }
+  }
 
   if (!books.length) {
     return (
@@ -69,25 +140,26 @@ export function LogReadingForm({
   }
 
   return (
-    <form action={formAction} className="min-w-0">
+    <form action={formAction} className="min-w-0" onSubmit={handleSubmit}>
       <Card className="space-y-5">
         <div className="space-y-1">
           <p className="type-caption uppercase tracking-[0.16em] text-label-assistive">
             {formatDateLong(todayKey)}
           </p>
           <h2 className="text-[1.0625rem] leading-6 font-semibold tracking-[-0.02em] text-label-strong sm:type-heading1">
-            오늘 읽은 내용
+            {initialLog ? "기록 수정" : "오늘 읽은 내용"}
           </h2>
         </div>
 
         <input name="groupId" type="hidden" value={groupId} />
         <input name="date" type="hidden" value={todayKey} />
+        {initialLog ? <input name="logId" type="hidden" value={initialLog.id} /> : null}
 
         <Select
           error={state.fieldErrors?.bookId?.[0]}
           label="책"
           name="bookId"
-          onChange={(event) => setBookId(event.target.value)}
+          onChange={(event) => handleBookChange(event.target.value)}
           value={bookId}
         >
           {books.map((book) => (
@@ -104,9 +176,11 @@ export function LogReadingForm({
             label="시작 페이지"
             min={1}
             name="startPage"
-            onChange={(event) => setStartPage(event.target.value)}
+            onChange={(event) => {
+              setStartPage(event.target.value);
+              setClientError(null);
+            }}
             pattern="[0-9]*"
-            placeholder="40"
             type="number"
             value={startPage}
           />
@@ -116,9 +190,11 @@ export function LogReadingForm({
             label="끝 페이지"
             min={1}
             name="endPage"
-            onChange={(event) => setEndPage(event.target.value)}
+            onChange={(event) => {
+              setEndPage(event.target.value);
+              setClientError(null);
+            }}
             pattern="[0-9]*"
-            placeholder="68"
             type="number"
             value={endPage}
           />
@@ -131,9 +207,11 @@ export function LogReadingForm({
           label="읽은 페이지"
           min={1}
           name="pagesRead"
-          onChange={(event) => setPagesRead(event.target.value)}
+          onChange={(event) => {
+            setPagesRead(event.target.value);
+            setClientError(null);
+          }}
           pattern="[0-9]*"
-          placeholder="24"
           readOnly={hasPageRange}
           type="number"
           value={effectivePagesRead}
@@ -144,10 +222,16 @@ export function LogReadingForm({
           label="메모"
           maxLength={220}
           name="memo"
-          onChange={(event) => setMemo(event.target.value)}
-          placeholder="짧게 남겨도 됩니다."
+          onChange={(event) => {
+            setMemo(event.target.value);
+            setClientError(null);
+          }}
           value={memo}
         />
+
+        {clientError ? (
+          <Toast title={clientError} tone="negative" />
+        ) : null}
 
         {state.message ? (
           <Toast

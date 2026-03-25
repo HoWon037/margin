@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ReadingLogActionsMenu } from "@/components/domain/reading-log-actions-menu";
 import { ReadingLogCard } from "@/components/domain/reading-log-card";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs } from "@/components/ui/tabs";
-import { Toast } from "@/components/ui/toast";
 import { getGroupWorkspace } from "@/lib/data/queries";
-import { getStringParam, readToast } from "@/lib/toast";
+import { getStringParam } from "@/lib/toast";
 import { formatPages } from "@/lib/utils";
 
 interface GroupHomePageProps {
@@ -85,7 +85,6 @@ export default async function GroupHomePage({
   const { groupId } = await params;
   const resolvedSearchParams = await searchParams;
   const workspace = await getGroupWorkspace(groupId);
-  const toast = readToast(resolvedSearchParams);
   const logView = getStringParam(resolvedSearchParams, "view") === "mine" ? "mine" : "group";
   const pageParam = Number(getStringParam(resolvedSearchParams, "page") ?? "1");
 
@@ -121,14 +120,6 @@ export default async function GroupHomePage({
 
   return (
     <div className="space-y-5">
-      {toast ? (
-        <Toast
-          description={toast.description}
-          title={toast.title}
-          tone={toast.tone}
-        />
-      ) : null}
-
       <Card elevated className="surface-soft space-y-5">
         <div className="flex flex-wrap items-center gap-2">
           <div
@@ -184,7 +175,15 @@ export default async function GroupHomePage({
         {paginatedLogs.length ? (
           <div className="space-y-4">
             {paginatedLogs.map((log) => (
-              <ReadingLogCard key={log.id} log={log} />
+              <ReadingLogCard
+                key={log.id}
+                actions={
+                  log.member.id === workspace.me.id ? (
+                    <ReadingLogActionsMenu groupId={groupId} logId={log.id} />
+                  ) : undefined
+                }
+                log={log}
+              />
             ))}
           </div>
         ) : (

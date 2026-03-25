@@ -105,7 +105,7 @@ export function MobileMemberAccordionList({
               }`}
             >
               <div className="overflow-hidden">
-                <div className="grid gap-3 px-4 pb-4 sm:hidden">
+                <div className="grid gap-3 border-t border-line-normal/60 px-4 pt-3 pb-4 sm:hidden">
                   <div className="rounded-2xl bg-fill-alternative p-4">
                     <p className="type-caption text-label-assistive">읽은 날</p>
                     <p className="mt-1 type-label text-label-strong">

@@ -37,9 +37,8 @@ export function WeeklyHistoryAccordion({
 
   return (
     <div className="space-y-4">
-      {weeks.map((week, index) => {
+      {weeks.map((week) => {
         const open = openWeekId === week.id;
-        const weekNumber = weeks.length - index;
 
         return (
           <Card key={week.id} className="overflow-hidden p-0">
@@ -51,7 +50,7 @@ export function WeeklyHistoryAccordion({
             >
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2">
-                  <p className="type-headline text-label-strong">{weekNumber}주차</p>
+                  <p className="type-headline text-label-strong">{week.weekNumber}주차</p>
                   {week.isCurrentWeek ? (
                     <span className="type-caption text-label-assistive">(이번 주)</span>
                   ) : null}

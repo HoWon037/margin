@@ -36,10 +36,21 @@ create table if not exists public.groups (
   description text,
   weekly_goal_type text not null check (weekly_goal_type in ('days', 'pages')),
   weekly_goal_value integer not null check (weekly_goal_value > 0),
+  record_start_date date not null,
   invite_code text not null unique,
   owner_id uuid not null references public.users (id) on delete cascade,
   created_at timestamptz not null default now()
 );
+
+alter table public.groups
+  add column if not exists record_start_date date;
+
+update public.groups
+set record_start_date = date_trunc('week', created_at at time zone 'utc')::date
+where record_start_date is null;
+
+alter table public.groups
+  alter column record_start_date set not null;
 
 create table if not exists public.group_members (
   id uuid primary key default gen_random_uuid(),
@@ -88,9 +99,11 @@ create table if not exists public.reading_logs (
   start_page integer check (start_page >= 0),
   end_page integer check (end_page >= 0),
   mood_tag text,
-  created_at timestamptz not null default now(),
-  unique (group_id, user_id, date)
+  created_at timestamptz not null default now()
 );
+
+alter table public.reading_logs
+  drop constraint if exists reading_logs_group_id_user_id_date_key;
 
 alter table public.users enable row level security;
 alter table public.groups enable row level security;

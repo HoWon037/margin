@@ -4,24 +4,19 @@ import { DeleteGroupForm } from "@/components/settings/delete-group-form";
 import { MemberManagementList } from "@/components/settings/member-management-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Toast } from "@/components/ui/toast";
 import { getGroupWorkspace } from "@/lib/data/queries";
-import { readToast } from "@/lib/toast";
+import { formatDateLong } from "@/lib/date";
 import { notFound } from "next/navigation";
 
 interface SettingsPageProps {
   params: Promise<{ groupId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function SettingsPage({
   params,
-  searchParams,
 }: SettingsPageProps) {
   const { groupId } = await params;
-  const resolvedSearchParams = await searchParams;
   const workspace = await getGroupWorkspace(groupId);
-  const toast = readToast(resolvedSearchParams);
 
   if (!workspace) {
     notFound();
@@ -31,14 +26,6 @@ export default async function SettingsPage({
 
   return (
     <div className="space-y-5">
-      {toast ? (
-        <Toast
-          description={toast.description}
-          title={toast.title}
-          tone={toast.tone}
-        />
-      ) : null}
-
       {!isOwner ? (
         <Card className="space-y-2">
           <p className="type-headline text-label-strong">접근 제한</p>
@@ -49,6 +36,16 @@ export default async function SettingsPage({
       ) : (
         <>
           <GroupSettingsForm group={workspace.group} isOwner={isOwner} />
+
+          <Card className="space-y-2">
+            <p className="type-headline text-label-strong">기록 시작일</p>
+            <p className="type-body text-label-strong">
+              {formatDateLong(workspace.group.recordStartDate)}
+            </p>
+            <p className="type-caption text-label-assistive">
+              주차는 이 월요일부터 1주차로 계산됩니다.
+            </p>
+          </Card>
 
           <Card className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

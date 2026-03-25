@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { cn } from "@/lib/cn";
 import type { AvatarTone } from "@/lib/types";
 
@@ -54,13 +53,14 @@ export function Avatar({ name, tone, avatarUrl, size = "md" }: AvatarProps) {
       )}
     >
       {avatarUrl ? (
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           alt={`${name} 프로필 사진`}
-          className="object-cover"
-          fill
-          sizes={imageSizes[size]}
+          className="h-full w-full object-cover"
+          draggable={false}
+          height={Number.parseInt(imageSizes[size], 10)}
           src={avatarUrl}
-          unoptimized
+          width={Number.parseInt(imageSizes[size], 10)}
         />
       ) : (
         initials

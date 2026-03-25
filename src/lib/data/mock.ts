@@ -1,4 +1,4 @@
-import { getTodayKey, toDateKey } from "@/lib/date";
+import { getTodayKey, getWeekStartDate, toDateKey } from "@/lib/date";
 import type {
   SourceBook,
   SourceDataset,
@@ -14,6 +14,12 @@ function buildDate(daysAgo: number, hour = 8) {
   date.setDate(date.getDate() - daysAgo);
   date.setHours(hour, 0, 0, 0);
   return date;
+}
+
+function buildWeekMonday(weeksAgo = 0) {
+  const monday = getWeekStartDate(new Date());
+  monday.setDate(monday.getDate() - weeksAgo * 7);
+  return monday;
 }
 
 function makeUser(
@@ -85,6 +91,7 @@ export function createMockDataset(groupId = DEMO_GROUP_ID): SourceDataset {
       "한 주 내내 조금씩 읽고 짧게 기록을 남기는 작은 독서모임",
     weeklyGoalType: "days",
     weeklyGoalValue: 3,
+    recordStartDate: toDateKey(buildWeekMonday(5)),
     inviteCode: DEMO_INVITE_CODE,
     ownerId: "user-mina",
     createdAt: buildDate(120).toISOString(),

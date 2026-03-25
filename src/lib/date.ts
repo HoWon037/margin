@@ -14,19 +14,28 @@ export function getTodayKey() {
   return toDateKey(new Date());
 }
 
-export function getWeekDates(referenceDate = new Date()) {
+export function getWeekStartDate(referenceDate = new Date()) {
   const start = new Date(referenceDate);
   const day = start.getDay();
   const offset = day === 0 ? -6 : 1 - day;
 
   start.setDate(start.getDate() + offset);
   start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+export function getWeekDates(referenceDate = new Date()) {
+  const start = getWeekStartDate(referenceDate);
 
   return Array.from({ length: 7 }, (_, index) => {
     const current = new Date(start);
     current.setDate(start.getDate() + index);
     return current;
   });
+}
+
+export function isMondayDateKey(dateKey: string) {
+  return parseDateKey(dateKey).getDay() === 1;
 }
 
 const shortWeekdayFormatter = new Intl.DateTimeFormat("ko-KR", {

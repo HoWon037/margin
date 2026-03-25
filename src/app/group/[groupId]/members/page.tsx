@@ -6,9 +6,8 @@ import { ReadingLogCard } from "@/components/domain/reading-log-card";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { Toast } from "@/components/ui/toast";
 import { getGroupWorkspace } from "@/lib/data/queries";
-import { getStringParam, readToast } from "@/lib/toast";
+import { getStringParam } from "@/lib/toast";
 import type { MemberSummary } from "@/lib/types";
 import { formatMemberRole, formatPages } from "@/lib/utils";
 
@@ -117,7 +116,6 @@ export default async function MembersPage({
   const { groupId } = await params;
   const resolvedSearchParams = await searchParams;
   const selectedMemberId = getStringParam(resolvedSearchParams, "member");
-  const toast = readToast(resolvedSearchParams);
   const workspace = await getGroupWorkspace(groupId);
 
   if (!workspace) {
@@ -131,14 +129,6 @@ export default async function MembersPage({
 
   return (
     <div className="space-y-6">
-      {toast ? (
-        <Toast
-          description={toast.description}
-          title={toast.title}
-          tone={toast.tone}
-        />
-      ) : null}
-
       <div className="grid gap-6 min-[720px]:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
         <MobileMemberAccordionList members={workspace.members} />
 

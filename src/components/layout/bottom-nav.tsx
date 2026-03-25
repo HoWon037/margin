@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 
 export function BottomNav({ groupId }: { groupId: string }) {
   const pathname = usePathname();
+
   const items = getGroupNavigation(groupId);
   const hidden = pathname.endsWith("/log") || pathname.endsWith("/settings");
   const activeIndex = Math.max(

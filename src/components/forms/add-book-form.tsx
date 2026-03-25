@@ -41,7 +41,6 @@ export function AddBookForm({ groupId }: { groupId: string }) {
               error={state.fieldErrors?.title?.[0]}
               label="책 제목"
               name="title"
-              placeholder="에덴의 동쪽"
               required
             />
           </div>
@@ -51,7 +50,6 @@ export function AddBookForm({ groupId }: { groupId: string }) {
               error={state.fieldErrors?.author?.[0]}
               label="저자"
               name="author"
-              placeholder="존 스타인벡"
               required
             />
           </div>
@@ -64,17 +62,16 @@ export function AddBookForm({ groupId }: { groupId: string }) {
               min={1}
               name="totalPages"
               pattern="[0-9]*"
-              placeholder="320"
               required
               type="number"
             />
           </div>
         </div>
 
-        {state.message ? (
+        {state.status === "error" && state.message ? (
           <Toast
             title={state.message}
-            tone={state.status === "success" ? "positive" : "negative"}
+            tone="negative"
           />
         ) : null}
 

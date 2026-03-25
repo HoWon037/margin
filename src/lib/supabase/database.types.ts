@@ -69,6 +69,7 @@ export interface Database {
           description: string | null;
           weekly_goal_type: "days" | "pages";
           weekly_goal_value: number;
+          record_start_date: string;
           invite_code: string;
           owner_id: string;
           created_at: string;
@@ -79,6 +80,7 @@ export interface Database {
           description?: string | null;
           weekly_goal_type: "days" | "pages";
           weekly_goal_value: number;
+          record_start_date: string;
           invite_code: string;
           owner_id: string;
           created_at?: string;
@@ -88,6 +90,7 @@ export interface Database {
           description?: string | null;
           weekly_goal_type?: "days" | "pages";
           weekly_goal_value?: number;
+          record_start_date?: string;
           invite_code?: string;
         };
         Relationships: [];

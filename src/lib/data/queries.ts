@@ -4,11 +4,13 @@ import {
   formatWeekdayShort,
   getTodayKey,
   getWeekDates,
+  getWeekStartDate,
   parseDateKey,
   toDateKey,
 } from "@/lib/date";
 import { DEMO_GROUP_ID, DEMO_INVITE_CODE } from "@/lib/constants";
 import { createMockDataset } from "@/lib/data/mock";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/lib/supabase/database.types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
@@ -39,41 +41,45 @@ type WeeklyDateMeta = {
 
 type WeeklyRange = {
   id: string;
+  weekNumber: number;
   startDate: string;
   endDate: string;
   isCurrentWeek: boolean;
 };
 
-function getWeekStartDate(referenceDate: Date) {
-  const start = new Date(referenceDate);
-  const day = start.getDay();
-  const offset = day === 0 ? -6 : 1 - day;
-
-  start.setDate(start.getDate() + offset);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
 function getWeekKey(dateKey: string) {
   return toDateKey(getWeekStartDate(parseDateKey(dateKey)));
 }
 
-function buildRecentWeekRanges(referenceDate = new Date(), count = 6): WeeklyRange[] {
+function buildWeekRanges(recordStartDate: string, referenceDate = new Date()): WeeklyRange[] {
+  const firstWeekStart = getWeekStartDate(parseDateKey(recordStartDate));
   const currentWeekStart = getWeekStartDate(referenceDate);
+  const lastWeekStart =
+    firstWeekStart.getTime() > currentWeekStart.getTime()
+      ? firstWeekStart
+      : currentWeekStart;
+  const ranges: WeeklyRange[] = [];
+  let weekNumber = 1;
 
-  return Array.from({ length: count }, (_, index) => {
-    const start = new Date(currentWeekStart);
-    start.setDate(currentWeekStart.getDate() - index * 7);
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
+  for (
+    const start = new Date(firstWeekStart);
+    start.getTime() <= lastWeekStart.getTime();
+    start.setDate(start.getDate() + 7), weekNumber += 1
+  ) {
+    const weekStart = new Date(start);
+    const end = new Date(weekStart);
+    end.setDate(weekStart.getDate() + 6);
 
-    return {
-      id: toDateKey(start),
-      startDate: toDateKey(start),
+    ranges.push({
+      id: toDateKey(weekStart),
+      weekNumber,
+      startDate: toDateKey(weekStart),
       endDate: toDateKey(end),
-      isCurrentWeek: index === 0,
-    };
-  });
+      isCurrentWeek: toDateKey(weekStart) === toDateKey(currentWeekStart),
+    });
+  }
+
+  return ranges.reverse();
 }
 
 function toUserSummary(user: SourceUser): UserSummary {
@@ -194,11 +200,13 @@ function buildEnrichedLogs(dataset: SourceDataset) {
 }
 
 function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
-  const enrichedLogs = buildEnrichedLogs(dataset);
+  const enrichedLogs = buildEnrichedLogs(dataset).filter(
+    (log) => log.date >= dataset.group.recordStartDate,
+  );
   const todayKey = getTodayKey();
   const weekKeys = getWeekDates().map(toDateKey);
   const weekKeySet = new Set(weekKeys);
-  const weeklyRanges = buildRecentWeekRanges();
+  const weeklyRanges = buildWeekRanges(dataset.group.recordStartDate);
   const weeklyDateMeta: WeeklyDateMeta[] = weekKeys.map((dateKey) => ({
     date: dateKey,
     label: formatWeekdayShort(dateKey),
@@ -373,6 +381,7 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
 
     return {
       id: range.id,
+      weekNumber: range.weekNumber,
       startDate: range.startDate,
       endDate: range.endDate,
       isCurrentWeek: range.isCurrentWeek,
@@ -386,7 +395,7 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
     };
   });
 
-  const currentWeekOverview = weeklyHistory[0];
+  const currentWeekOverview = weeklyHistory.find((week) => week.isCurrentWeek);
 
   return {
     group: {
@@ -395,6 +404,7 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
       description: dataset.group.description,
       weeklyGoalType: dataset.group.weeklyGoalType,
       weeklyGoalValue: dataset.group.weeklyGoalValue,
+      recordStartDate: dataset.group.recordStartDate,
       inviteCode: dataset.group.inviteCode,
       ownerId: dataset.group.ownerId,
       memberCount: dataset.members.length,
@@ -429,21 +439,24 @@ function buildWorkspace(dataset: SourceDataset): GroupWorkspace {
       weeks: weeklyHistory,
     },
     todayPrompt: "오늘 읽은 내용을 가볍게 남겨 보세요.",
-    hasLoggedToday: dataset.logs.some(
+    hasLoggedToday: enrichedLogs.some(
       (log) =>
-        log.userId === dataset.currentUserId &&
-        log.date === todayKey &&
-        log.didRead,
+        log.member.id === dataset.currentUserId &&
+        log.date === todayKey,
     ),
   };
 }
 
-async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null> {
+async function getSupabaseDataset(
+  groupId: string,
+): Promise<SourceDataset | null> {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
     return null;
   }
+
+  const readClient = createSupabaseAdminClient() ?? supabase;
 
   const {
     data: { user },
@@ -453,7 +466,7 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
     return null;
   }
 
-  const membershipQuery = await supabase
+  const membershipQuery = await readClient
     .from("group_members")
     .select("*")
     .eq("group_id", groupId)
@@ -465,14 +478,14 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
   }
 
   const [groupQuery, membersQuery, booksQuery, logsQuery] = await Promise.all([
-    supabase.from("groups").select("*").eq("id", groupId).single(),
-    supabase.from("group_members").select("*").eq("group_id", groupId),
-    supabase
+    readClient.from("groups").select("*").eq("id", groupId).single(),
+    readClient.from("group_members").select("*").eq("group_id", groupId),
+    readClient
       .from("books")
       .select("*")
       .eq("group_id", groupId)
       .order("created_at", { ascending: false }),
-    supabase
+    readClient
       .from("reading_logs")
       .select("*")
       .eq("group_id", groupId)
@@ -501,7 +514,7 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
     ]),
   );
 
-  const usersQuery = await supabase
+  const usersQuery = await readClient
     .from("users")
     .select("*")
     .in("id", userIds);
@@ -520,6 +533,7 @@ async function getSupabaseDataset(groupId: string): Promise<SourceDataset | null
       description: group.description ?? "",
       weeklyGoalType: group.weekly_goal_type,
       weeklyGoalValue: group.weekly_goal_value,
+      recordStartDate: group.record_start_date,
       inviteCode: group.invite_code,
       ownerId: group.owner_id,
       createdAt: group.created_at,
@@ -595,6 +609,8 @@ export async function getCurrentUserSummary() {
     return null;
   }
 
+  const readClient = createSupabaseAdminClient() ?? supabase;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -603,7 +619,7 @@ export async function getCurrentUserSummary() {
     return null;
   }
 
-  const profileQuery = await supabase
+  const profileQuery = await readClient
     .from("users")
     .select("*")
     .eq("id", user.id)
@@ -629,6 +645,8 @@ export async function getGroupDirectory(): Promise<GroupDirectory> {
     };
   }
 
+  const readClient = createSupabaseAdminClient() ?? supabase;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -642,7 +660,7 @@ export async function getGroupDirectory(): Promise<GroupDirectory> {
     };
   }
 
-  const profileQuery = await supabase
+  const profileQuery = await readClient
     .from("users")
     .select("*")
     .eq("id", user.id)
@@ -650,7 +668,7 @@ export async function getGroupDirectory(): Promise<GroupDirectory> {
 
   const profile = profileQuery.data as UserRow | null;
 
-  const membershipsQuery = await supabase
+  const membershipsQuery = await readClient
     .from("group_members")
     .select("*")
     .eq("user_id", user.id)
@@ -669,8 +687,8 @@ export async function getGroupDirectory(): Promise<GroupDirectory> {
   }
 
   const [groupsQuery, memberCountsQuery] = await Promise.all([
-    supabase.from("groups").select("*").in("id", groupIds),
-    supabase.from("group_members").select("group_id").in("group_id", groupIds),
+    readClient.from("groups").select("*").in("id", groupIds),
+    readClient.from("group_members").select("group_id").in("group_id", groupIds),
   ]);
 
   const groups = (groupsQuery.data ?? []) as GroupRow[];
@@ -700,6 +718,7 @@ export async function getGroupDirectory(): Promise<GroupDirectory> {
           description: group.description ?? "",
           weeklyGoalType: group.weekly_goal_type,
           weeklyGoalValue: group.weekly_goal_value,
+          recordStartDate: group.record_start_date,
           inviteCode: group.invite_code,
           ownerId: group.owner_id,
           memberCount: countMap[group.id] ?? 0,
@@ -754,6 +773,7 @@ export async function getInvitePreview(inviteCode: string) {
     description: group.description ?? "",
     weeklyGoalType: group.weekly_goal_type,
     weeklyGoalValue: group.weekly_goal_value,
+    recordStartDate: group.record_start_date,
     inviteCode: group.invite_code,
     ownerId: group.owner_id,
     memberCount: membersQuery.count ?? 0,
