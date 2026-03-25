@@ -159,10 +159,6 @@ export default async function GroupsPage() {
           />
         ) : (
           <EmptyState
-            actionHref="/join"
-            actionLabel="모임 들어가기"
-            secondaryHref="/create-group"
-            secondaryLabel="모임 만들기"
             description="로그인 후 다시 확인해 주세요."
             title="로그인 정보가 없습니다"
           />
