@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { EntryAuthForm } from "@/components/forms/entry-auth-form";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCurrentUserSummary, getLandingWorkspace } from "@/lib/data/queries";
@@ -24,6 +25,11 @@ export default async function EntryPage() {
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-5">
       <div className="entry-ambient pointer-events-none absolute inset-x-0 top-0 h-72" />
+      <div className="absolute inset-x-0 top-4 z-10 px-4 sm:top-5 sm:px-5">
+        <div className="mx-auto flex w-full max-w-[460px] justify-end">
+          <ThemeToggle compact />
+        </div>
+      </div>
       <div className="w-full max-w-[460px]">
         <Card
           elevated
@@ -32,7 +38,7 @@ export default async function EntryPage() {
           <div className="entry-card-sheen pointer-events-none absolute inset-x-0 top-0 h-28" />
           <div className="relative space-y-6">
             <div className="flex items-center gap-4">
-              <span className="inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-label-strong text-lg font-semibold text-white shadow-xs">
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-[18px] border border-primary/15 bg-primary text-lg font-semibold text-white shadow-xs shadow-primary/15">
                 M
               </span>
               <span className="type-title2 text-label-strong">Margin</span>

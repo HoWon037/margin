@@ -23,6 +23,7 @@ export default async function GroupLayout({
     <AppShell
       currentUser={workspace.me}
       group={workspace.group}
+      members={workspace.members}
       isOwner={workspace.group.ownerId === workspace.me.id}
     >
       {children}

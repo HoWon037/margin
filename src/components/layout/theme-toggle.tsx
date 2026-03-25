@@ -6,6 +6,7 @@ type Theme = "light" | "dark";
 
 interface ThemeToggleProps {
   className?: string;
+  compact?: boolean;
 }
 
 function getCurrentTheme(): Theme {
@@ -31,7 +32,10 @@ function applyTheme(theme: Theme) {
   window.localStorage.setItem("margin-theme", theme);
 }
 
-export function ThemeToggle({ className }: ThemeToggleProps) {
+export function ThemeToggle({
+  className,
+  compact = false,
+}: ThemeToggleProps) {
   const toggleTheme = () => {
     if (document.documentElement.classList.contains("theme-transitioning")) {
       return;
@@ -75,6 +79,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
       className={cn(
         "chrome-surface inline-flex h-9 items-center gap-2 rounded-full border border-line-solid px-3 text-label-strong shadow-xs transition-[background-color,border-color,box-shadow,transform,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
         "md:hover:-translate-y-px md:hover:bg-fill-alternative",
+        compact && "h-8 gap-0 px-2.5",
         className,
       )}
       onClick={toggleTheme}
@@ -101,7 +106,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           />
         </svg>
       </span>
-      <span className="type-caption">테마</span>
+      {compact ? null : <span className="type-caption">테마</span>}
     </button>
   );
 }

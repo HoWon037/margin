@@ -7,17 +7,19 @@ import { GroupRoutePrefetch } from "@/components/layout/group-route-prefetch";
 import { RouteScrollReset } from "@/components/layout/route-scroll-reset";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
-import type { GroupSummary, UserSummary } from "@/lib/types";
+import type { GroupSummary, MemberSummary, UserSummary } from "@/lib/types";
 
 interface AppShellChromeProps {
   currentUser: UserSummary;
   group: GroupSummary;
+  members: MemberSummary[];
   isOwner: boolean;
 }
 
 export function AppShellChrome({
   currentUser,
   group,
+  members,
   isOwner,
 }: AppShellChromeProps) {
   const [ready, setReady] = useState(false);
@@ -47,9 +49,9 @@ export function AppShellChrome({
         ? createPortal(
             <TopBar
               currentUser={currentUser}
-              groupId={group.id}
-              groupName={group.name}
+              group={group}
               isOwner={isOwner}
+              members={members}
             />,
             topTarget,
           )

@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { AppShellChrome } from "@/components/layout/app-shell-chrome";
-import type { GroupSummary, UserSummary } from "@/lib/types";
+import type { GroupSummary, MemberSummary, UserSummary } from "@/lib/types";
 
 interface AppShellProps {
   group: GroupSummary;
   currentUser: UserSummary;
+  members: MemberSummary[];
   isOwner: boolean;
   children: ReactNode;
 }
@@ -12,6 +13,7 @@ interface AppShellProps {
 export function AppShell({
   group,
   currentUser,
+  members,
   isOwner,
   children,
 }: AppShellProps) {
@@ -28,6 +30,7 @@ export function AppShell({
       <AppShellChrome
         currentUser={currentUser}
         group={group}
+        members={members}
         isOwner={isOwner}
       />
     </div>

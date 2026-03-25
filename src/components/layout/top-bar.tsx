@@ -1,24 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GroupSettingsDrawer } from "@/components/layout/group-settings-drawer";
 import { ProfileLink } from "@/components/layout/profile-link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { buttonStyles } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import type { UserSummary } from "@/lib/types";
+import type { GroupSummary, MemberSummary, UserSummary } from "@/lib/types";
 
 interface TopBarProps {
-  groupId: string;
-  groupName: string;
+  group: GroupSummary;
+  members: MemberSummary[];
   isOwner: boolean;
   currentUser: UserSummary;
 }
 
 export function TopBar({
-  groupId,
-  groupName,
+  group,
+  members,
   isOwner,
   currentUser,
 }: TopBarProps) {
@@ -72,7 +72,7 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 border-transparent bg-transparent transition-[background-color,border-color,box-shadow,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
+        "fixed inset-x-0 top-0 z-30 border-transparent bg-transparent transition-[background-color,border-color,box-shadow,opacity] duration-[600ms] ease-[cubic-bezier(0.18,0.9,0.32,1)] md:sticky md:chrome-surface md:border-b md:border-line-solid md:bg-bg-alternative/90",
         isFloatingMobile
           ? "pointer-events-none border-transparent bg-transparent shadow-none"
           : "",
@@ -101,7 +101,7 @@ export function TopBar({
               user={currentUser}
             />
             <p className="hidden min-w-0 truncate type-label text-label-assistive sm:block">
-              {groupName}
+              {group.name}
             </p>
           </div>
           <div
@@ -119,7 +119,7 @@ export function TopBar({
               )}
             />
             {isOwner ? (
-              <Link
+              <GroupSettingsDrawer
                 className={buttonStyles({
                   variant: "secondary",
                   size: "sm",
@@ -129,10 +129,10 @@ export function TopBar({
                       "h-9 border-line-solid/90 px-3 md:hover:bg-fill-alternative",
                   ),
                 })}
-                href={`/group/${groupId}/settings`}
-              >
-                관리
-              </Link>
+                group={group}
+                isOwner={isOwner}
+                members={members}
+              />
             ) : null}
           </div>
         </div>

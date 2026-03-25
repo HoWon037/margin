@@ -24,6 +24,7 @@ export function ProfileLink({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const closeTimeoutRef = useRef<number | null>(null);
   const openFrameRef = useRef<number | null>(null);
+  const hasHistoryEntryRef = useRef(false);
   const [rendered, setRendered] = useState(false);
   const [visible, setVisible] = useState(false);
   const [origin, setOrigin] = useState({ x: 36, y: 28 });
@@ -48,13 +49,30 @@ export function ProfileLink({
 
     setRendered(true);
     openFrameRef.current = window.requestAnimationFrame(() => {
+      if (!hasHistoryEntryRef.current) {
+        window.history.pushState(
+          {
+            ...(window.history.state ?? {}),
+            __profileDrawer: true,
+          },
+          "",
+          window.location.href,
+        );
+        hasHistoryEntryRef.current = true;
+      }
       setVisible(true);
       openFrameRef.current = null;
     });
   };
 
-  const closeDrawer = () => {
+  const closeDrawer = (options?: { fromHistory?: boolean }) => {
     setVisible(false);
+    if (options?.fromHistory) {
+      hasHistoryEntryRef.current = false;
+    } else if (hasHistoryEntryRef.current) {
+      hasHistoryEntryRef.current = false;
+      window.history.back();
+    }
     closeTimeoutRef.current = window.setTimeout(() => {
       setRendered(false);
       closeTimeoutRef.current = null;
@@ -71,14 +89,21 @@ export function ProfileLink({
         closeDrawer();
       }
     };
+    const handlePopState = () => {
+      if (hasHistoryEntryRef.current) {
+        closeDrawer({ fromHistory: true });
+      }
+    };
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, [rendered]);
 
@@ -123,7 +148,7 @@ export function ProfileLink({
                 "fixed inset-0 z-[120] bg-dimmer/52 backdrop-blur-[2px] transition-[opacity,backdrop-filter] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
                 visible ? "opacity-100" : "pointer-events-none opacity-0",
               )}
-              onClick={closeDrawer}
+              onClick={() => closeDrawer()}
             >
               <aside
                 aria-modal="true"
@@ -162,7 +187,7 @@ export function ProfileLink({
                     </div>
                     <button
                       className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line-solid text-label-assistive transition md:hover:bg-fill-alternative md:hover:text-label-strong"
-                      onClick={closeDrawer}
+                      onClick={() => closeDrawer()}
                       type="button"
                     >
                       <span className="sr-only">닫기</span>
@@ -188,14 +213,14 @@ export function ProfileLink({
                     <Link
                       className="flex items-center rounded-2xl px-3 py-3 type-label text-label-strong transition md:hover:bg-fill-alternative"
                       href={href}
-                      onClick={closeDrawer}
+                      onClick={() => closeDrawer({ fromHistory: true })}
                     >
                       프로필 변경
                     </Link>
                     <Link
                       className="flex items-center rounded-2xl px-3 py-3 type-label text-label-strong transition md:hover:bg-fill-alternative"
                       href="/groups"
-                      onClick={closeDrawer}
+                      onClick={() => closeDrawer({ fromHistory: true })}
                     >
                       내 모임
                     </Link>
